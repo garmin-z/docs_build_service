@@ -1,0 +1,14 @@
+node_modules/
+docs/
+pdf/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# Editor directories and files
+.idea
+.vscode
+
+package-lock.json

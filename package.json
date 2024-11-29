@@ -1,0 +1,17 @@
+{
+  "name": "localhooks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "basic-ftp": "^5.0.5",
+    "express": "^4.21.1",
+    "ws": "^8.18.0"
+  }
+}
