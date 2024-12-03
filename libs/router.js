@@ -1,5 +1,6 @@
 const express = require("express");
 const deploy = require("../services/deploy");
+const cors = require("cors");
 
 // 定义一个变量来存储Express应用的单例实例
 let appInstance;
@@ -9,6 +10,7 @@ const getAppInstance = (port = 3000) => {
     if (!appInstance) {
         // 如果实例不存在，则创建一个新的Express应用实例
         appInstance = express();
+        appInstance.use(cors());
 
         // WebSocket Upgrade
         appInstance.server = appInstance.listen(port, "0.0.0.0", () => {
