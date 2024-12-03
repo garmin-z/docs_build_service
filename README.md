@@ -56,6 +56,11 @@ sudo systemctl restart vsftpd
 ### ssh
 >登录不了ssh 没有权限可能是：
 ```bash
+# 修改pem文件权限
+icacls "D:\code\ufactory_docs.pem" /inheritance:r
+icacls "D:\code\ufactory_docs.pem" /grant:r "$($env:USERNAME):(R)"
+
+# 服务器文件权限
 sudo chown root:root /home
 sudo chmod 755 /home
 sudo chown ec2-user:ec2-user /home/ec2-user -R

@@ -11,7 +11,7 @@ const getAppInstance = (port = 3000) => {
         appInstance = express();
 
         // WebSocket Upgrade
-        appInstance.server = appInstance.listen(port, () => {
+        appInstance.server = appInstance.listen(port, "0.0.0.0", () => {
             console.log(`Server running on http://localhost:${port}`);
         });
 
@@ -20,7 +20,9 @@ const getAppInstance = (port = 3000) => {
         });
 
         // 部署端点
-        appInstance.post("/deploy", deploy.index);
+        appInstance.get("/deploy", deploy.index);
+        appInstance.get("/preview", deploy.preview);
+
     }
 
     // 返回Express应用的单例实例
