@@ -67,3 +67,17 @@ sudo chown ec2-user:ec2-user /home/ec2-user -R
 sudo chmod 700 /home/ec2-user /home/ec2-user/.ssh
 sudo chmod 600 /home/ec2-user/.ssh/authorized_keys
 ```
+
+
+### ssh
+```bash
+
+# 创建ssh
+ ssh-keygen -t rsa -b 4096 -C "garminzjm@gmail.com"
+
+# cat
+cat /home/garmin/.ssh/id_rsa.pub
+
+# 添加公钥
+sudo vim  ~/.ssh/authorized_keys
+ ```

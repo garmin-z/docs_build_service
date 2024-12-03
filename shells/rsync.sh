@@ -2,6 +2,7 @@
 
 # 定义本地目录路径，需要根据实际情况修改
 local_directory="/app/ufactory_docs/.vitepress/dist/"
+# local_directory="/mnt/d/code/ufactory_docs/.vitepress/dist/"
 
 # 定义服务器的地址、用户名和目标目录路径，需要根据实际情况修改
 server_address="3.138.33.79"
