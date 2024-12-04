@@ -25,6 +25,8 @@ else
     log "项目目录已存在，跳过创建"
 fi
 
+# 忽略文件权限变化
+git config core.filemode false
 
 # 2. 拉取代码
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
