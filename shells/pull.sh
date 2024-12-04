@@ -34,7 +34,6 @@ log "开始拉取代码..."
 if [ ! -d "$DEPLOY_PATH/.git" ]; then
     git clone https://github.com/garmin-z/vitepress_docs.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
 else
-    sudo chmod -R 775 $DEPLOY_PATH
     # 进入到已存在的git项目目录
     cd "$DEPLOY_PATH"
     

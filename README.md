@@ -1,23 +1,28 @@
 Use Docker:
 
 ```bash
-# Build the image
-docker build -t ufactroy_docs . 
-# Run the container
-docker run -it --name ufactory_docs --restart=always -d -p 3020:3020 -p 3030:3030 -p 3040:3040 ufactory_docs
-# Set Tag
-docker tag ufactory_docs garmin954/ufactory_docs:v1.0.0
-# push to docker hub
-docker push garmin954/ufactory_docs:v1.0.0
-# pull image from docker hub
-docker pull garmin954/ufactory_docs:v1.0.0
+docker build -t ufactory_docs_service . 
 
-docker run -it --name ufactory_docs --restart=always -d -p 3020:3020 -p 3030:3030 -p 3040:3040 garmin954/ufactory_docs:v1.0.0 /bin/bash
-docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service /bin/bash
+
 
 docker save -o ufactory_docs_service.tar ufactory_docs_service
+
+scp .\ufactory_docs_service.tar uf@192.168.1.176:/home/uf/Downloads
+
 docker load -i ufactory_docs_service.tar
+
+docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service /bin/bash
+
 docker exec -it ufactory_docs_service /bin/bash
+
+npx puppeteer browsers install chrome
+
+ssh-keygen -t rsa -b 4096 -C "garminzjm@gmail.com"
+
+./shells/rsync.sh 
+
+# /*********************************** 
+
 # logs
 docker logs -f ufactory_docs
 
@@ -85,3 +90,7 @@ cat /home/garmin/.ssh/id_rsa.pub
 # 添加公钥
 sudo vim  ~/.ssh/authorized_keys
  ```
+
+```
+RUN npx puppeteer browsers install chrome
+```

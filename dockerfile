@@ -1,5 +1,5 @@
 # 使用Node.js官方镜像作为基础镜像，选择合适的版本，这里以18为例
-FROM node:18
+FROM timbru31/node-chrome
 
 # 更新软件包列表
 RUN apt-get update && apt-get install -y fonts-noto-cjk
@@ -24,6 +24,5 @@ COPY . .
 # 暴露服务器监听的端口
 EXPOSE 3000
 EXPOSE 3040
-RUN npx puppeteer browsers install chrome
 
 CMD ["./start.sh"]
