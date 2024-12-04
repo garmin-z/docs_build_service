@@ -13,6 +13,10 @@ docker push garmin954/ufactory_docs:v1.0.0
 docker pull garmin954/ufactory_docs:v1.0.0
 
 docker run -it --name ufactory_docs --restart=always -d -p 3020:3020 -p 3030:3030 -p 3040:3040 garmin954/ufactory_docs:v1.0.0 /bin/bash
+docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service /bin/bash
+
+docker save -o ufactory_docs_service.tar ufactory_docs_service
+docker load -i ufactory_docs_service.tar
 
 # logs
 docker logs -f ufactory_docs

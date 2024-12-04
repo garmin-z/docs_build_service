@@ -4,6 +4,7 @@ FROM timbru31/node-chrome
 RUN apt-get update && apt-get install -y fonts-noto-cjk
 
 RUN apt-get install -y rsync
+RUN apt-get install -y lsof
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
@@ -22,6 +23,8 @@ COPY . .
 # 暴露服务器监听的端口
 EXPOSE 3000
 EXPOSE 3040
+RUN npx puppeteer browsers install chrome
+RUN npm run build
 
 # 定义容器启动时要执行的命令，启动Express服务器 & npm run export:api & npm run webhooks
 CMD ["./start.sh"]

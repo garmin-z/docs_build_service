@@ -24,11 +24,7 @@ npm install && log "安装依赖完成"
 
 # 构建项目
 log "构建项目..."
-npm run docs:build && log "项目构建完成" || { log "构建项目失败"; exit 1; }
+npm run docs:preview && log "打开项目预览" || { log "打开项目预览失败"; exit 1; }
 
-# 生成PDF
-log "生成PDF..."
-npm run export:cn && log "中文PDF生成完成" || { log "中文PDF生成失败"; exit 1; }
-npm run export:en && log "英文PDF生成完成" || { log "英文PDF生成失败"; exit 1; }
 
-log "打包完成..."
+log "预览端口为: 3040"
