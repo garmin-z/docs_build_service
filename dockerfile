@@ -1,5 +1,6 @@
 # 使用Node.js官方镜像作为基础镜像，选择合适的版本，这里以18为例
-FROM timbru31/node-chrome
+FROM node:18
+
 # 更新软件包列表
 RUN apt-get update && apt-get install -y fonts-noto-cjk
 
@@ -24,7 +25,5 @@ COPY . .
 EXPOSE 3000
 EXPOSE 3040
 RUN npx puppeteer browsers install chrome
-RUN npm run build
 
-# 定义容器启动时要执行的命令，启动Express服务器 & npm run export:api & npm run webhooks
 CMD ["./start.sh"]

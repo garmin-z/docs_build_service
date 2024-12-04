@@ -17,7 +17,7 @@ docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 
 
 docker save -o ufactory_docs_service.tar ufactory_docs_service
 docker load -i ufactory_docs_service.tar
-
+docker exec -it ufactory_docs_service /bin/bash
 # logs
 docker logs -f ufactory_docs
 

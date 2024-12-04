@@ -20,7 +20,7 @@ async function executeScriptsSequentially(scriptPaths, sendWs) {
 }
 
 function pull(req, rsp) {
-    const scriptPaths = ["./shells/pull.sh"];
+    const scriptPaths = ["./shells/kill_preview.sh", "./shells/pull.sh"];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -29,7 +29,7 @@ function pull(req, rsp) {
 
 
 function build(req, rsp) {
-    const scriptPaths = ["./shells/build.sh"];
+    const scriptPaths = ["./shells/kill_preview.sh", "./shells/build.sh"];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -38,7 +38,15 @@ function build(req, rsp) {
 
 
 function publish(req, rsp) {
-    const scriptPaths = ["./shells/rsync.sh"];
+    const scriptPaths = ["./shells/kill_preview.sh", "./shells/rsync.sh"];
+    rsp.status(200).send({
+        message: "脚本执行中"
+    });
+    executeScriptsSequentially(scriptPaths, sendWs);
+}
+
+function preview(req, rsp) {
+    const scriptPaths = ["./shells/kill_preview.sh", "./shells/preview.sh"];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -65,17 +73,7 @@ function executeScript(scriptPath, sendWs) {
 
 
 
-function preview(req, rsp) {
-    const deployProcess = exec(`cd /app/ufactory-docs && npm run preview`);
-    deployProcess.stdout.on("data", (data) => sendWs(data));
-    deployProcess.stderr.on("data", (data) => sendWs(`ERROR: ${data}`));
-    deployProcess.on("close", (code) => {
-        sendWs(`脚本执行完成，退出码：${code}`);
-        rsp.status(200).send({
-            message: "脚本执行中，日志通过 WebSocket 发送"
-        });
-    });
-}
+
 
 module.exports = {
     pull,
