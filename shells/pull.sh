@@ -28,6 +28,9 @@ fi
 # 忽略文件权限变化
 git config core.filemode false
 
+log "设置代理"
+export HTTP_PROXY="http://192.168.1.19:8016"
+
 # 2. 拉取代码
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
 log "开始拉取代码..."
