@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 3000
 EXPOSE 3040
 
-CMD ["./start.sh"]
+CMD ["npm", "run", "start"]

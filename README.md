@@ -11,7 +11,7 @@ scp .\ufactory_docs_service.tar uf@192.168.1.176:/home/uf/Downloads
 
 docker load -i ufactory_docs_service.tar
 
-docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service /bin/bash
+docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service
 
 docker exec -it ufactory_docs_service /bin/bash
 
