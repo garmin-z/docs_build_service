@@ -1,6 +1,7 @@
 const express = require("express");
 const deploy = require("../services/deploy");
 const cors = require("cors");
+const path = require("path");
 
 // 定义一个变量来存储Express应用的单例实例
 let appInstance;
@@ -18,12 +19,15 @@ const getAppInstance = (port = 3000) => {
         });
 
         appInstance.get("/", (req, rsp) => {
-            rsp.send("Ufactory Docs Server!");
+            rsp.sendFile(path.join(__dirname, '../views', 'index.html'));
         });
 
         // 部署端点
-        appInstance.get("/deploy", deploy.index);
-        appInstance.get("/preview", deploy.preview);
+        // appInstance.get("/deploy", deploy.index);
+        appInstance.post("/pull", deploy.pull);
+        appInstance.post("/build", deploy.build);
+        appInstance.post("/publish", deploy.publish);
+        appInstance.post("/preview", deploy.preview);
 
     }
 

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #f4f4f4;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>任务管理</h1>
+    <button id="pullButton">拉取</button>
+    <button id="buildButton">打包</button>
+    <button id="previewButton">预览</button>
+    <button id="publishButton">发布</button>
+
+    <div id="log"></div>
+
+    <script>
+        // 选择页面元素
+        const logElement = document.getElementById('log');
+        const pullButton = document.getElementById('pullButton');
+        const buildButton = document.getElementById('buildButton');
+        const publishButton = document.getElementById('publishButton');
+        const previewButton = document.getElementById('previewButton');
+
+        // WebSocket 连接对象
+        let socket;
+
+
+        function action(method) {
+            fetch(window.location.origin + '/' + method, {
+                method: 'POST'
+            }).then(res => {
+                return res.text()
+            })
+        }
+        // 日志显示函数
+        function displayLog(message) {
+            const logMessage = document.createElement('div');
+            logMessage.textContent = message;
+            logElement.appendChild(logMessage);
+            logElement.scrollTop = logElement.scrollHeight; // 滚动到底部
+        }
+
+
+
+        // 连接 WebSocket 并接收日志
+        function connectWebSocket() {
+            // 如果已有连接，则关闭
+            if (socket) {
+                socket.close();
+            }
+
+            // 建立 WebSocket 连接
+            socket = new WebSocket(`ws://${window.location.host}`);
+
+            socket.onopen = () => {
+            };
+
+            socket.onmessage = (event) => {
+                if (event.data) {
+                    const data = JSON.parse(event.data)
+                    displayLog(data.log); // 显示日志                    
+                }
+            };
+
+            socket.onerror = (error) => {
+                displayLog(`WebSocket 错误: ${error.message}`);
+            };
+
+            socket.onclose = () => {
+                displayLog(`${endpoint} 连接已关闭`);
+            };
+        }
+
+        // 按钮事件处理
+        pullButton.addEventListener('click', () => {
+            action("pull")
+        });
+
+        buildButton.addEventListener('click', () => {
+            action("build")
+        });
+        previewButton.addEventListener('click', () => {
+            action("preview")
+        });
+        publishButton.addEventListener('click', () => {
+            action("publish")
+        });
+
+        connectWebSocket("ws")
+    </script>
+</body>
+
+</html>

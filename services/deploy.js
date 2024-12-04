@@ -19,10 +19,28 @@ async function executeScriptsSequentially(scriptPaths, sendWs) {
     }
 }
 
-function index(req, rsp) {
-    const scriptPaths = ["./shells/pull.sh", "./shells/build.sh", "./shells/rsync.sh"];
+function pull(req, rsp) {
+    const scriptPaths = ["./shells/pull.sh"];
     rsp.status(200).send({
-        message: "脚本执行中，日志通过 WebSocket 发送"
+        message: "脚本执行中"
+    });
+    executeScriptsSequentially(scriptPaths, sendWs);
+}
+
+
+function build(req, rsp) {
+    const scriptPaths = ["./shells/build.sh"];
+    rsp.status(200).send({
+        message: "脚本执行中"
+    });
+    executeScriptsSequentially(scriptPaths, sendWs);
+}
+
+
+function publish(req, rsp) {
+    const scriptPaths = ["./shells/rsync.sh"];
+    rsp.status(200).send({
+        message: "脚本执行中"
     });
     executeScriptsSequentially(scriptPaths, sendWs);
 }
@@ -60,6 +78,8 @@ function preview(req, rsp) {
 }
 
 module.exports = {
-    index,
+    pull,
+    build,
+    publish,
     preview
 }
