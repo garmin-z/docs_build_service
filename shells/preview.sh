@@ -24,7 +24,7 @@ npm install && log "安装依赖完成"
 
 # 构建项目
 log "构建项目..."
-npm run docs:preview && log "打开项目预览" || { log "打开项目预览失败"; exit 1; }
+npm run docs:dev && log "打开项目预览" || { log "打开项目预览失败"; exit 1; }
 
 
 log "预览端口为: 3040"
