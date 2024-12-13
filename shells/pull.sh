@@ -36,7 +36,9 @@ export https_proxy=http://192.168.1.19:8016
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
 log "开始拉取代码..."
 if [ ! -d "$DEPLOY_PATH/.git" ]; then
-    git clone https://github.com/garmin-z/vitepress_docs.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
+    # git clone https://github.com/garmin-z/vitepress_docs.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
+    git clone https://github.com/xArm-Developer/ufactory_usermanual.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
+    
 else
     # 进入到已存在的git项目目录
     cd "$DEPLOY_PATH"
