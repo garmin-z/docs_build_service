@@ -64,6 +64,8 @@ function preview(req, rsp) {
 
 function executeScript(scriptPath, sendWs) {
     return new Promise((resolve, reject) => {
+        sendWs(`开始脚本${scriptPath}：`);
+
         const deployProcess = exec(`${scriptPath}`);
         deployProcess.stdout.on("data", (data) => {
             sendWs(data);
