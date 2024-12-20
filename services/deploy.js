@@ -16,7 +16,6 @@ async function executeScriptsSequentially(scriptPaths, sendWs) {
             sendWs(`有脚本执行出错：${err.message}。请重试`);
             break;
         }
-        we
     }
 }
 
