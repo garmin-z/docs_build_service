@@ -13,7 +13,7 @@ log() {
 }
 
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_doc_$params1"
+DEPLOY_PATH="/app/ufactory_docs/$params1"
 
 # 切换到项目目录
 cd "$DEPLOY_PATH" || { log "无法进入目录 $DEPLOY_PATH"; exit 1; }

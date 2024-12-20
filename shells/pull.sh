@@ -14,7 +14,7 @@ log() {
 
 
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_doc_$params1"
+DEPLOY_PATH="/app/ufactory_docs/$params1"
 
 log "开始部署脚本"
 
