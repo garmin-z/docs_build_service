@@ -1,5 +1,5 @@
 #!/bin/bash
-
+params1=$1
 # 日志文件路径
 LOG_DIR="/app/logs"
 
@@ -12,8 +12,9 @@ log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
 
+
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_docs"
+DEPLOY_PATH="/app/ufactory_doc_$params1"
 
 log "开始部署脚本"
 
@@ -36,8 +37,10 @@ export https_proxy=http://192.168.1.19:8016
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
 log "开始拉取代码..."
 if [ ! -d "$DEPLOY_PATH/.git" ]; then
+    DOCS_URL=https://github.com/xArm-Developer/ufactory_doc_$params1.git
+    echo DOCS_URL: $DOCS_URL
     # git clone https://github.com/garmin-z/vitepress_docs.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
-    git clone https://github.com/xArm-Developer/ufactory_usermanual.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
+    git clone $DOCS_URL "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
     
 else
     # 进入到已存在的git项目目录

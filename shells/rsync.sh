@@ -1,4 +1,5 @@
 #!/bin/bash
+params1=$1
 
 # 日志文件路径
 LOG_DIR="/app/logs"
@@ -13,13 +14,13 @@ log() {
 
 
 # 定义本地目录路径，需要根据实际情况修改
-local_directory="/app/ufactory_docs/.vitepress/dist/"
+local_directory="/app/ufactory_doc_$params1/.vitepress/dist/"
 # local_directory="/mnt/d/code/ufactory_docs/.vitepress/dist/"
 
 # 定义服务器的地址、用户名和目标目录路径，需要根据实际情况修改
 server_address="3.138.33.79"
 server_username="ec2-user"
-server_target_directory="/home/ec2-user/ufactory_docs"
+server_target_directory="/home/ec2-user/ufactory_docs/$params1"
 log "准备开始发布到服务器"
 
 # 使用rsync进行上传

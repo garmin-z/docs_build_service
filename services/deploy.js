@@ -13,14 +13,18 @@ async function executeScriptsSequentially(scriptPaths, sendWs) {
         try {
             await executeScript(scriptPath, sendWs);
         } catch (err) {
-            sendWs(`有脚本执行出错：${err.message}`);
+            sendWs(`有脚本执行出错：${err.message}。请重试`);
             break;
         }
+        we
     }
 }
 
 function pull(req, rsp) {
-    const scriptPaths = ["./shells/kill_preview.sh", "./shells/pull.sh"];
+    // 获取body docs参数
+    const docs = req.body.docs;
+
+    const scriptPaths = ["./shells/kill_preview.sh", `./shells/pull.sh ${docs}`];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -29,7 +33,9 @@ function pull(req, rsp) {
 
 
 function build(req, rsp) {
-    const scriptPaths = ["./shells/kill_preview.sh", "./shells/build.sh"];
+    const docs = req.body.docs;
+
+    const scriptPaths = ["./shells/kill_preview.sh", `./shells/build.sh ${docs}`];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -38,7 +44,8 @@ function build(req, rsp) {
 
 
 function publish(req, rsp) {
-    const scriptPaths = ["./shells/kill_preview.sh", "./shells/rsync.sh"];
+    const docs = req.body.docs;
+    const scriptPaths = ["./shells/kill_preview.sh", `./shells/rsync.sh ${docs}`];
     rsp.status(200).send({
         message: "脚本执行中"
     });
@@ -46,7 +53,9 @@ function publish(req, rsp) {
 }
 
 function preview(req, rsp) {
-    const scriptPaths = ["./shells/kill_preview.sh", "./shells/preview.sh"];
+    const docs = req.body.docs;
+
+    const scriptPaths = ["./shells/kill_preview.sh", `./shells/preview.sh ${docs}`];
     rsp.status(200).send({
         message: "脚本执行中"
     });

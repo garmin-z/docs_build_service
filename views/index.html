@@ -20,17 +20,33 @@
             background-color: #f4f4f4;
         }
 
+        .button,
         button {
             margin: 5px;
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 
 <body>
     <h1>任务管理</h1>
+
+    <div style="margin: 20px 0px; font-size: 18px;">
+        <label for="docs">选择操作的文档:</label>
+        <label for="user_manual" class="button">
+            <input id="user_manual" name="docs" class="ant-radio-input" type="radio" value="user_manual">User
+            Manual</input>
+        </label>
+
+        <label for="api" class="button">
+            <input id="api" name="docs" class="ant-radio-input" type="radio" value="api">Api</input>
+        </label>
+    </div>
+
+
     <button id="pullButton">拉取</button>
     <button id="buildButton">打包</button>
     <button id="previewButton">预览</button>
@@ -45,14 +61,27 @@
         const buildButton = document.getElementById('buildButton');
         const publishButton = document.getElementById('publishButton');
         const previewButton = document.getElementById('previewButton');
-
         // WebSocket 连接对象
         let socket;
 
 
         function action(method) {
+            const selectedRadio = document.querySelector('input[name="docs"]:checked');
+
+
+            if (!selectedRadio) {
+                alert('请选中需要操作的文档')
+                return
+            }
+
             fetch(window.location.origin + '/' + method, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    docs: selectedRadio.value
+                })
             }).then(res => {
                 return res.text()
             })
@@ -95,6 +124,8 @@
                 displayLog(`${endpoint} 连接已关闭`);
             };
         }
+
+        console.log(pullButton);
 
         // 按钮事件处理
         pullButton.addEventListener('click', () => {

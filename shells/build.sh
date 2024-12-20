@@ -1,4 +1,5 @@
 #!/bin/bash
+params1=$1
 
 # 日志文件路径
 LOG_DIR="/app/logs"
@@ -12,7 +13,7 @@ log() {
 }
 
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_docs"
+DEPLOY_PATH="/app/ufactory_doc_$params1"
 
 # 切换到项目目录
 cd "$DEPLOY_PATH" || { log "无法进入目录 $DEPLOY_PATH"; exit 1; }
