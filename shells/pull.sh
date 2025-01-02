@@ -30,8 +30,8 @@ fi
 git config core.filemode false
 
 log "设置代理"
-export http_proxy=http://192.168.1.19:8016
-export https_proxy=http://192.168.1.19:8016
+export http_proxy=http://192.168.1.176:8016
+export https_proxy=http://192.168.1.176:8016
 
 # 2. 拉取代码
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
