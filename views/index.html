@@ -6,12 +6,34 @@
     <title>任务管理</title>
     <style>
       :root {
+        /* 浅色主题变量 */
         --primary-color: #2563eb;
         --primary-hover: #1d4ed8;
         --border-color: #e5e7eb;
+        --bg-color: #ffffff;
         --bg-gray: #f3f4f6;
         --text-color: #111827;
+        --text-secondary: #4b5563;
+        --card-bg: #ffffff;
+        --log-bg: #f3f4f6;
+        --btn-bg: #ffffff;
+        --btn-border: #e5e7eb;
         --radius: 6px;
+      }
+
+      /* 深色主题变量 */
+      [data-theme="dark"] {
+        --primary-color: #3b82f6;
+        --primary-hover: #60a5fa;
+        --border-color: #374151;
+        --bg-color: #111827;
+        --bg-gray: #1f2937;
+        --text-color: #f9fafb;
+        --text-secondary: #9ca3af;
+        --card-bg: #1f2937;
+        --log-bg: #111827;
+        --btn-bg: #374151;
+        --btn-border: #4b5563;
       }
 
       * {
@@ -26,23 +48,55 @@
         color: var(--text-color);
         line-height: 1.5;
         padding: 20px;
-        background-color: #fff;
+        background-color: var(--bg-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
 
       .container {
         max-width: 1200px;
         margin: 0 auto;
-        background: white;
+        background: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: var(--radius);
         padding: 24px;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
       }
 
       h1 {
         font-size: 24px;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--border-color);
+        margin: 0;
+      }
+
+      .theme-toggle {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 8px 12px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .theme-toggle:hover {
+        background-color: var(--bg-gray);
+      }
+
+      .theme-toggle svg {
+        width: 16px;
+        height: 16px;
       }
 
       .document-selector {
@@ -52,7 +106,7 @@
       .document-selector h2 {
         font-size: 14px;
         margin-bottom: 12px;
-        color: #4b5563;
+        color: var(--text-secondary);
       }
 
       .radio-group {
@@ -71,11 +125,12 @@
         appearance: none;
         width: 16px;
         height: 16px;
-        border: 2px solid #d1d5db;
+        border: 2px solid var(--border-color);
         border-radius: 50%;
         margin: 0;
         cursor: pointer;
         position: relative;
+        transition: border-color 0.2s ease;
       }
 
       .radio-item input[type="radio"]:checked {
@@ -92,11 +147,13 @@
         height: 8px;
         border-radius: 50%;
         background-color: var(--primary-color);
+        transition: background-color 0.2s ease;
       }
 
       .radio-item label {
         font-size: 14px;
         cursor: pointer;
+        color: var(--text-color);
       }
 
       .button-group {
@@ -111,13 +168,22 @@
         align-items: center;
         justify-content: center;
         padding: 8px 16px;
-        border: 1px solid var(--border-color);
-        background-color: white;
+        border: 1px solid var(--btn-border);
+        background-color: var(--btn-bg);
         color: var(--text-color);
         border-radius: var(--radius);
         font-size: 14px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
+        gap: 8px;
+      }
+
+      .btn .icon {
+        transition: transform 0.2s ease;
+      }
+
+      .btn:hover .icon {
+        transform: scale(1.1);
       }
 
       .btn:hover {
@@ -125,12 +191,13 @@
       }
 
       .log-container {
-        background-color: var(--bg-gray);
+        background-color: var(--log-bg);
         border: 1px solid var(--border-color);
         border-radius: var(--radius);
         padding: 16px;
         height: 400px;
         overflow-y: auto;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
       }
 
       .log-content {
@@ -139,25 +206,25 @@
         font-size: 13px;
         white-space: pre-wrap;
         line-height: 1.6;
+        color: var(--text-color);
       }
 
-      /* 自定义滚动条样式 */
       .log-container::-webkit-scrollbar {
         width: 8px;
       }
 
       .log-container::-webkit-scrollbar-track {
-        background: #f1f1f1;
+        background: var(--bg-gray);
         border-radius: 4px;
       }
 
       .log-container::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
+        background: var(--border-color);
         border-radius: 4px;
       }
 
       .log-container::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
+        background: var(--text-secondary);
       }
 
       @media (max-width: 640px) {
@@ -176,13 +243,52 @@
         .btn {
           padding: 6px 12px;
         }
+
+        .theme-toggle span {
+          display: none;
+        }
       }
     </style>
   </head>
 
   <body>
     <div class="container">
-      <h1>文档任务管理</h1>
+      <div class="header">
+        <h1>文档任务管理</h1>
+        <button class="theme-toggle" aria-label="切换主题">
+          <!-- 月亮图标 (深色主题) -->
+          <svg
+            class="moon"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+            />
+          </svg>
+          <!-- 太阳图标 (浅色主题) -->
+          <svg
+            class="sun"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          <span>切换主题</span>
+        </button>
+      </div>
 
       <div class="document-selector">
         <h2>选择操作的文档:</h2>
@@ -219,16 +325,130 @@
       </div>
 
       <div class="button-group">
-        <button class="btn" id="pullButton">拉取</button>
-        <button class="btn" id="buildButton">打包</button>
-        <button class="btn" id="previewButton">预览</button>
-        <button class="btn" id="publishButton">发布</button>
+        <button class="btn" id="pullButton">
+          <svg
+            class="icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            stroke="currentColor"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          拉取
+        </button>
+        <button class="btn" id="buildButton">
+          <svg
+            class="icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            stroke="currentColor"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+            <path
+              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+            ></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          打包
+        </button>
+        <button class="btn" id="previewButton">
+          <svg
+            class="icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            stroke="currentColor"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          预览
+        </button>
+        <button class="btn" id="publishButton">
+          <svg
+            class="icon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            stroke="currentColor"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          发布
+        </button>
       </div>
 
       <div class="log-container">
         <div class="log-content" id="log"></div>
       </div>
     </div>
+
+    <script>
+      // 主题切换功能
+      const themeToggle = document.querySelector(".theme-toggle");
+      const html = document.documentElement;
+      const moonIcon = document.querySelector(".moon");
+      const sunIcon = document.querySelector(".sun");
+
+      // 从 localStorage 获取保存的主题
+      const savedTheme = localStorage.getItem("theme") || "light";
+      html.setAttribute("data-theme", savedTheme);
+      updateThemeIcons(savedTheme);
+
+      themeToggle.addEventListener("click", () => {
+        const currentTheme = html.getAttribute("data-theme");
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+        html.setAttribute("data-theme", newTheme);
+        localStorage.setItem("theme", newTheme);
+        updateThemeIcons(newTheme);
+      });
+
+      // 更新主题图标显示
+      function updateThemeIcons(theme) {
+        if (theme === "dark") {
+          moonIcon.style.display = "none";
+          sunIcon.style.display = "block";
+        } else {
+          moonIcon.style.display = "block";
+          sunIcon.style.display = "none";
+        }
+      }
+
+      // 检查系统主题偏好
+      if (!localStorage.getItem("theme")) {
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+        const defaultTheme = prefersDark ? "dark" : "light";
+        html.setAttribute("data-theme", defaultTheme);
+        localStorage.setItem("theme", defaultTheme);
+        updateThemeIcons(defaultTheme);
+      }
+    </script>
 
     <script>
       // 选择页面元素
