@@ -23,6 +23,16 @@ server_username="ec2-user"
 server_target_directory="/home/ec2-user/ufactory_docs/$params1"
 log "准备开始发布到服务器"
 
+# 先清空远程服务器上的目标目录
+log "开始清空远程服务器上的目标目录 $server_target_directory"
+ssh "$server_username@$server_address" "rm -rf $server_target_directory/*"
+if [ $? -eq 0 ]; then
+    log "成功清空远程服务器上的目标目录"
+else
+    log "清空远程服务器上的目标目录失败，请检查相关权限和连接情况"
+    exit 1
+fi
+
 # 使用rsync进行上传
 rsync -avz --progress $local_directory $server_username@$server_address:$server_target_directory && log "上传"
 
