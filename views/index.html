@@ -1,168 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>任务管理</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+      :root {
+        --primary-color: #2563eb;
+        --primary-hover: #1d4ed8;
+        --border-color: #e5e7eb;
+        --bg-gray: #f3f4f6;
+        --text-color: #111827;
+        --radius: 6px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        color: var(--text-color);
+        line-height: 1.5;
+        padding: 20px;
+        background-color: #fff;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .document-selector {
+        margin-bottom: 24px;
+      }
+
+      .document-selector h2 {
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #4b5563;
+      }
+
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .radio-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .radio-item input[type="radio"] {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #d1d5db;
+        border-radius: 50%;
+        margin: 0;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .radio-item input[type="radio"]:checked {
+        border-color: var(--primary-color);
+      }
+
+      .radio-item input[type="radio"]:checked::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+      }
+
+      .radio-item label {
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        border: 1px solid var(--border-color);
+        background-color: white;
+        color: var(--text-color);
+        border-radius: var(--radius);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn:hover {
+        background-color: var(--bg-gray);
+      }
+
+      .log-container {
+        background-color: var(--bg-gray);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 16px;
+        height: 400px;
+        overflow-y: auto;
+      }
+
+      .log-content {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+      }
+
+      /* 自定义滚动条样式 */
+      .log-container::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .log-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      .log-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+
+      .log-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding: 16px;
         }
 
-        #log {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            height: 300px;
-            overflow-y: scroll;
-            background-color: #f4f4f4;
+        .radio-group {
+          gap: 12px;
         }
 
-        .button,
-        button {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: 1px solid #ccc;
+        .button-group {
+          gap: 8px;
         }
+
+        .btn {
+          padding: 6px 12px;
+        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <h1>任务管理</h1>
+  <body>
+    <div class="container">
+      <h1>文档任务管理</h1>
 
-    <div style="margin: 20px 0px; font-size: 18px;">
-        <label for="docs">选择操作的文档:</label>
-        <label for="user_manual" class="button">
-            <input id="user_manual" name="docs" class="ant-radio-input" type="radio" value="usermanual">User
-            Manual</input>
-        </label>
+      <div class="document-selector">
+        <h2>选择操作的文档:</h2>
+        <div class="radio-group">
+          <div class="radio-item">
+            <input type="radio" id="user_manual" name="document-type" />
+            <label for="user_manual">User Manual</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="api" name="document-type" />
+            <label for="api">Api</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="support_article" name="document-type" />
+            <label for="support_article">Support Article</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="xarm" name="document-type" />
+            <label for="xarm">Xarm</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="850" name="document-type" />
+            <label for="850">850</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="lite6" name="document-type" />
+            <label for="lite6">Lite6</label>
+          </div>
+          <div class="radio-item">
+            <input type="radio" id="accessories" name="document-type" checked />
+            <label for="accessories">Accessories</label>
+          </div>
+        </div>
+      </div>
 
-        <label for="api" class="button">
-            <input id="api" name="docs" class="ant-radio-input" type="radio" value="api">Api</input>
-        </label>
+      <div class="button-group">
+        <button class="btn" id="pullButton">拉取</button>
+        <button class="btn" id="buildButton">打包</button>
+        <button class="btn" id="previewButton">预览</button>
+        <button class="btn" id="publishButton">发布</button>
+      </div>
 
-        <label for="support_article" class="button">
-            <input id="support_article" name="docs" class="ant-radio-input" type="radio" value="support_article">Support
-            Article</input>
-        </label>
-        <label for="xarm" class="button">
-            <input id="xarm" name="docs" class="ant-radio-input" type="radio" value="xarm">Xarm</input>
-        </label>
-
-        <label for="850" class="button">
-            <input id="850" name="docs" class="ant-radio-input" type="radio" value="850">850</input>
-        </label>
-
-        <label for="lite6" class="button">
-            <input id="lite6" name="docs" class="ant-radio-input" type="radio" value="lite6">Lite6</input>
-        </label>
-        <label for="accessories" class="button">
-            <input id="accessories" name="docs" class="ant-radio-input" type="radio" value="accessories">Accessories</input>
-        </label>
+      <div class="log-container">
+        <div class="log-content" id="log"></div>
+      </div>
     </div>
 
-
-    <button id="pullButton">拉取</button>
-    <button id="buildButton">打包</button>
-    <button id="previewButton">预览</button>
-    <button id="publishButton">发布</button>
-
-    <div id="log"></div>
-
     <script>
-        // 选择页面元素
-        const logElement = document.getElementById('log');
-        const pullButton = document.getElementById('pullButton');
-        const buildButton = document.getElementById('buildButton');
-        const publishButton = document.getElementById('publishButton');
-        const previewButton = document.getElementById('previewButton');
-        // WebSocket 连接对象
-        let socket;
+      // 选择页面元素
+      const logElement = document.getElementById("log");
+      const pullButton = document.getElementById("pullButton");
+      const buildButton = document.getElementById("buildButton");
+      const publishButton = document.getElementById("publishButton");
+      const previewButton = document.getElementById("previewButton");
+      // WebSocket 连接对象
+      let socket;
 
+      function action(method) {
+        const selectedRadio = document.querySelector(
+          'input[name="document-type"]:checked'
+        );
 
-        function action(method) {
-            const selectedRadio = document.querySelector('input[name="docs"]:checked');
-
-
-            if (!selectedRadio) {
-                alert('请选中需要操作的文档')
-                return
-            }
-
-            fetch(window.location.origin + '/' + method, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    docs: selectedRadio.value
-                })
-            }).then(res => {
-                return res.text()
-            })
-        }
-        // 日志显示函数
-        function displayLog(message) {
-            const logMessage = document.createElement('div');
-            logMessage.textContent = message;
-            logElement.appendChild(logMessage);
-            logElement.scrollTop = logElement.scrollHeight; // 滚动到底部
+        if (!selectedRadio) {
+          alert("请选中需要操作的文档");
+          return;
         }
 
+        fetch(window.location.origin + "/" + method, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            docs: selectedRadio.value,
+          }),
+        }).then((res) => {
+          return res.text();
+        });
+      }
+      // 日志显示函数
+      function displayLog(message) {
+        const logMessage = document.createElement("div");
+        logMessage.textContent = message;
+        logElement.appendChild(logMessage);
+        logElement.scrollTop = logElement.scrollHeight; // 滚动到底部
+      }
 
-
-        // 连接 WebSocket 并接收日志
-        function connectWebSocket() {
-            // 如果已有连接，则关闭
-            if (socket) {
-                socket.close();
-            }
-
-            // 建立 WebSocket 连接
-            socket = new WebSocket(`ws://${window.location.host}`);
-
-            socket.onopen = () => {
-            };
-
-            socket.onmessage = (event) => {
-                if (event.data) {
-                    const data = JSON.parse(event.data)
-                    displayLog(data.log); // 显示日志                    
-                }
-            };
-
-            socket.onerror = (error) => {
-                displayLog(`WebSocket 错误: ${error.message}`);
-            };
-
-            socket.onclose = () => {
-                displayLog(`${endpoint} 连接已关闭`);
-            };
+      // 连接 WebSocket 并接收日志
+      function connectWebSocket() {
+        // 如果已有连接，则关闭
+        if (socket) {
+          socket.close();
         }
 
-        console.log(pullButton);
+        // 建立 WebSocket 连接
+        socket = new WebSocket(`ws://${window.location.host}`);
 
-        // 按钮事件处理
-        pullButton.addEventListener('click', () => {
-            action("pull")
-        });
+        socket.onopen = () => {};
 
-        buildButton.addEventListener('click', () => {
-            action("build")
-        });
-        previewButton.addEventListener('click', () => {
-            action("preview")
-        });
-        publishButton.addEventListener('click', () => {
-            action("publish")
-        });
+        socket.onmessage = (event) => {
+          if (event.data) {
+            const data = JSON.parse(event.data);
+            displayLog(data.log); // 显示日志
+          }
+        };
 
-        connectWebSocket("ws")
+        socket.onerror = (error) => {
+          displayLog(`WebSocket 错误: ${error.message}`);
+        };
+
+        socket.onclose = () => {
+          displayLog(`${endpoint} 连接已关闭`);
+        };
+      }
+
+      console.log(pullButton);
+
+      // 按钮事件处理
+      pullButton.addEventListener("click", () => {
+        action("pull");
+      });
+
+      buildButton.addEventListener("click", () => {
+        action("build");
+      });
+      previewButton.addEventListener("click", () => {
+        action("preview");
+      });
+      publishButton.addEventListener("click", () => {
+        action("publish");
+      });
+
+      connectWebSocket("ws");
     </script>
-</body>
-
+  </body>
 </html>
