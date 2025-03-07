@@ -28,8 +28,8 @@ log "构建项目..."
 npm run docs:build && log "项目构建完成" || { log "构建项目失败"; exit 1; }
 
 # 生成PDF
-log "生成PDF..."
-npm run export:cn && log "中文PDF生成完成" || { log "中文PDF生成失败"; exit 1; }
-npm run export:en && log "英文PDF生成完成" || { log "英文PDF生成失败"; exit 1; }
+# log "生成PDF..."
+# npm run export:cn && log "中文PDF生成完成" || { log "中文PDF生成失败"; exit 1; }
+# npm run export:en && log "英文PDF生成完成" || { log "英文PDF生成失败"; exit 1; }
 
 log "打包完成..."
