@@ -63,8 +63,21 @@ const sendWs = (message) => {
     });
 };
 
+const send = (message) => {
+    connectedClients.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify(message));
+            } catch (error) {
+                console.error(`发送日志给客户端时出错: ${error}`);
+            }
+        }
+    });
+};
+
 // 导出获取WebSocket服务器单例实例的函数和处理日志发送的函数
 module.exports = {
     newWebSocketServerInstance,
-    sendWs
+    sendWs,
+    send
 };
