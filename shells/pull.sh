@@ -44,7 +44,7 @@ branch_name="ufactory_doc_$params1"
 log "开始拉取代码..."
 if [ ! -d "$DEPLOY_PATH/.git" ]; then
     # DOCS_URL=https://github.com/xArm-Developer/ufactory_doc_$params1.git
-    DOCS_URL="https://github.com/xArm-Developer/ufactory_doc_usermanual.git"
+    DOCS_URL="https://github.com/xArm-Developer/ufactory_docs.git"
     echo DOCS_URL: $DOCS_URL
     # git clone https://github.com/garmin-z/vitepress_docs.git "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
     # git clone $DOCS_URL "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"
