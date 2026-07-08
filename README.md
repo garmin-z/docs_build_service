@@ -11,7 +11,14 @@ scp .\ufactory_docs_service.tar uf@192.168.1.176:/home/uf/Downloads
 
 docker load -i ufactory_docs_service.tar
 
-docker run -it --name ufactory_docs_service --restart=always -d -p 3000:3000 -p 3040:3040 ufactory_docs_service
+docker run -it --privileged --name ufactory_docs_service \
+--restart=always \
+-e UV_THREADPOOL_SIZE=4 \
+-d -p 3000:3000 -p 3040:3040 \
+ufactory_docs_service
+
+# 特权模式前台启动调试
+docker run -it --privileged --name debug_docs -p 3000:3000 -p 3040:3040 ufactory_docs_service
 
 docker exec -it ufactory_docs_service /bin/bash
 
@@ -78,17 +85,20 @@ sudo chmod 600 /home/ec2-user/.ssh/authorized_keys
 ```
 
 
-### ssh
 ```bash
-
-# 创建ssh
+### 推动文件的服务器
+#### 创建ssh
  ssh-keygen -t rsa -b 4096 -C "garminzjm@gmail.com"
 
-# cat
-cat /home/garmin/.ssh/id_rsa.pub
+#### cat
+ cat /root/.ssh/id_rsa.pub
 
-# 添加公钥
+### ssh 亚马逊服务器
+
+#### 添加公钥
 sudo vim  ~/.ssh/authorized_keys
+#### 重启ssh
+sudo systemctl restart sshd
  ```
 
 ```

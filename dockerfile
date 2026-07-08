@@ -1,5 +1,5 @@
 # 使用Node.js官方镜像作为基础镜像，选择合适的版本，这里以18为例
-FROM timbru31/node-chrome
+FROM timbru31/node-chrome:22
 
 # 更新软件包列表
 RUN apt-get update && apt-get install -y fonts-noto-cjk
