@@ -40,22 +40,45 @@ if ! npm install 2>&1 | tee -a "$LOG_FILE"; then
 fi
 log "安装依赖完成"
 
-# 启动预览服务（后台常驻，输出写入日志文件），端口以配置为准
-log "启动预览..."
-nohup npm run docs:dev -- --port "$PORT" &>> "$LOG_FILE" < /dev/null &
+# 启动预览服务（后台常驻），输出单独记到预览日志便于排查。
+# 注意：不能给 npm run docs:dev 追加 --port，仓库脚本里已有 --port 时会变成
+# "vitepress dev --port 3040 --port 3040"，vitepress 会因端口参数重复直接崩溃。
+# 所以优先直接调用仓库本地的 vitepress 可执行文件，端口完全由配置决定。
+PREVIEW_LOG="$LOG_DIR/preview_${PORT}_$(date +'%Y_%m_%d').log"
+log "启动预览（日志：$PREVIEW_LOG）..."
+if [ -x "./node_modules/.bin/vitepress" ]; then
+    PREVIEW_CMD=(./node_modules/.bin/vitepress dev --host --port "$PORT")
+else
+    # 兜底：仓库没有本地 vitepress 时使用仓库自己的脚本（端口以仓库配置为准）
+    PREVIEW_CMD=(npm run docs:dev)
+fi
 
-# 等待端口就绪（最多 15 秒）
-for _ in $(seq 1 15); do
-    if lsof -t -i:$PORT > /dev/null 2>&1; then
+if command -v setsid > /dev/null 2>&1; then
+    setsid "${PREVIEW_CMD[@]}" &>> "$PREVIEW_LOG" < /dev/null &
+else
+    nohup "${PREVIEW_CMD[@]}" &>> "$PREVIEW_LOG" < /dev/null &
+fi
+DEV_PID=$!
+
+# 等待端口就绪（最多 60 秒）；进程提前退出时立即报错
+pid=""
+for _ in $(seq 1 60); do
+    pid=$(lsof -t -i:$PORT 2>/dev/null | head -n 1)
+    if [ -n "$pid" ]; then
+        break
+    fi
+    if ! kill -0 "$DEV_PID" 2>/dev/null; then
         break
     fi
     sleep 1
 done
 
-pid=$(lsof -t -i:$PORT 2>/dev/null | head -n 1)
 if [ -n "$pid" ]; then
     log "预览已启动，端口 $PORT（PID $pid）"
 else
-    log "预览启动失败或端口不是 $PORT，请查看日志 $LOG_FILE"
+    log "预览启动失败（进程退出或端口 $PORT 未监听），最近日志如下："
+    tail -n 30 "$PREVIEW_LOG" 2>/dev/null | while IFS= read -r line; do
+        log "  $line"
+    done
     exit 1
 fi

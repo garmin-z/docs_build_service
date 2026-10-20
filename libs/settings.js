@@ -4,25 +4,57 @@ const fs = require("fs");
 
 // >>> CONFIG START（页面保存设置时会重写这一段，可手动修改）
 const CONFIG = {
-    docs: [
-        { value: "usermanual", label: "User Manual", branch: "ufactory_doc_usermanual" },
-        { value: "api", label: "Api", branch: "ufactory_doc_api" },
-        { value: "support_article", label: "Support Article", branch: "ufactory_doc_support_article" },
-        { value: "xarm", label: "Xarm", branch: "ufactory_doc_xarm" },
-        { value: "850", label: "850", branch: "ufactory_doc_850" },
-        { value: "lite6", label: "Lite6", branch: "ufactory_doc_lite6" },
-        { value: "accessories", label: "Accessories", branch: "ufactory_doc_accessories" },
-        { value: "releasenote", label: "Releasenote", branch: "ufactory_doc_releasenote" }
+    "docs": [
+        {
+            "value": "usermanual",
+            "label": "User Manual",
+            "branch": "ufactory_doc_usermanual"
+        },
+        {
+            "value": "api",
+            "label": "Api",
+            "branch": "ufactory_doc_api"
+        },
+        {
+            "value": "support_article",
+            "label": "Support Article",
+            "branch": "ufactory_doc_support_article"
+        },
+        {
+            "value": "xarm",
+            "label": "Xarm",
+            "branch": "ufactory_doc_xarm"
+        },
+        {
+            "value": "850",
+            "label": "850",
+            "branch": "ufactory_doc_850"
+        },
+        {
+            "value": "lite6",
+            "label": "Lite6",
+            "branch": "ufactory_doc_lite6"
+        },
+        {
+            "value": "accessories",
+            "label": "Accessories",
+            "branch": "ufactory_doc_accessories"
+        },
+        {
+            "value": "releasenote",
+            "label": "Releasenote",
+            "branch": "ufactory_doc_releasenote"
+        }
     ],
-    gitRepo: "https://github.com/xArm-Developer/ufactory_docs.git",
-    gitProxy: "http://192.168.1.176:8016",
-    deployRoot: "/app/ufactory_docs",
-    logDir: "/app/logs",
-    previewPort: 3040,
-    publish: {
-        host: "3.138.33.79",
-        user: "ec2-user",
-        remoteDir: "/home/ec2-user/ufactory_docs"
+    "gitRepo": "https://github.com/xArm-Developer/ufactory_docs.git",
+    "gitProxy": "http://192.168.1.176:8016",
+    "deployRoot": "/app/ufactory_docs",
+    "logDir": "/app/logs",
+    "previewPort": 3040,
+    "publish": {
+        "host": "3.138.33.79",
+        "user": "ec2-user",
+        "remoteDir": "/home/ec2-user/ufactory_docs"
     }
 };
 // <<< CONFIG END
