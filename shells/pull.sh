@@ -1,7 +1,7 @@
 #!/bin/bash
 params1=$1
 # 日志目录：/app/logs 不存在或不可写时退回到临时目录，避免因日志问题中断部署
-LOG_DIR="/app/logs"
+LOG_DIR="${DOCS_LOG_DIR:-/app/logs}"
 if ! { mkdir -p "$LOG_DIR" && touch "$LOG_DIR/.write_test"; } 2>/dev/null; then
     LOG_DIR="${TMPDIR:-/tmp}/docs_build_logs"
     mkdir -p "$LOG_DIR" || { echo "无法创建日志目录 $LOG_DIR"; exit 1; }
@@ -24,7 +24,7 @@ fi
 log "目标分支： 【$params1】"
 
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_docs/$params1"
+DEPLOY_PATH="${DOCS_ROOT:-/app/ufactory_docs}/$params1"
 
 log "开始部署脚本"
 
@@ -37,18 +37,23 @@ else
 fi
 
 log "设置代理"
-export http_proxy=http://192.168.1.176:8016
-export https_proxy=http://192.168.1.176:8016
+if [ -n "${DOCS_GIT_PROXY:-}" ]; then
+    log "使用代理：${DOCS_GIT_PROXY}"
+    export http_proxy="${DOCS_GIT_PROXY}"
+    export https_proxy="${DOCS_GIT_PROXY}"
+else
+    log "未配置 Git 代理"
+fi
 
-# 分支名称
-branch_name="ufactory_doc_$params1"
+# 分支名称（可由页面配置覆盖）
+branch_name="${DOCS_BRANCH:-ufactory_doc_$params1}"
 
 # 2. 拉取代码
 # 检查本地是否已经拉取过代码（即是否存在.git目录）
 log "开始拉取代码..."
 if [ ! -d "$DEPLOY_PATH/.git" ]; then
     # DOCS_URL=https://github.com/xArm-Developer/ufactory_doc_$params1.git
-    DOCS_URL="https://github.com/xArm-Developer/ufactory_docs.git"
+    DOCS_URL="${DOCS_GIT_REPO:-https://github.com/xArm-Developer/ufactory_docs.git}"
     echo DOCS_URL: $DOCS_URL
     # 克隆指定分支
     git clone -b "$branch_name" "$DOCS_URL" "$DEPLOY_PATH" &>> "$LOG_FILE" && log "代码拉取完成"

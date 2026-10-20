@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PORT=3040
+PORT="${DOCS_PREVIEW_PORT:-3040}"
 PIDS=$(lsof -t -i:$PORT 2>/dev/null | sort -u)
 
 if [ -z "$PIDS" ]; then

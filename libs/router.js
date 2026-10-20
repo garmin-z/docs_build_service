@@ -1,5 +1,7 @@
 const express = require("express");
 const deploy = require("../services/deploy");
+const settings = require("./settings");
+const jobState = require("./job-state");
 const cors = require("cors");
 const path = require("path");
 const bodyParser = require('body-parser');
@@ -22,6 +24,22 @@ const getAppInstance = (port = 3000) => {
 
         appInstance.get("/", (req, rsp) => {
             rsp.sendFile(path.join(__dirname, '../views', 'index.html'));
+        });
+
+        // 配置读取/保存
+        appInstance.get("/settings", (req, rsp) => {
+            rsp.json(settings.get());
+        });
+
+        appInstance.put("/settings", (req, rsp) => {
+            if (jobState.isRunning()) {
+                return rsp.status(409).send({ message: "有任务正在执行，暂时不能修改设置" });
+            }
+            try {
+                rsp.json(settings.update(req.body));
+            } catch (err) {
+                rsp.status(400).send({ message: err.message });
+            }
         });
 
         // 部署端点

@@ -12,28 +12,43 @@ const {
 } = require("../libs/ws");
 
 const jobState = require("../libs/job-state");
+const settings = require("../libs/settings");
 
 const execFileAsync = promisify(execFile);
 
-// 允许操作的文档类型白名单，白名单之外一律拒绝
-const ALLOWED_DOCS = new Set([
-    "xarm",
-    "lite6",
-    "850",
-    "api",
-    "support_article",
-    "accessories",
-    "releasenote",
-    "usermanual"
-]);
+// 文档类型来自配置文件
+function findDocConfig(docs) {
+    return settings.get().docs.find((doc) => doc.value === docs);
+}
+
+// 把配置转成脚本环境变量（shell 脚本里用 ${DOCS_xxx:-默认值} 兜底）
+function buildScriptEnv(docs) {
+    const current = settings.get();
+    const doc = current.docs.find((item) => item.value === docs) || {};
+    return {
+        ...process.env,
+        DOCS_ROOT: current.deployRoot,
+        DOCS_LOG_DIR: current.logDir,
+        DOCS_PREVIEW_PORT: String(current.previewPort),
+        DOCS_GIT_REPO: current.gitRepo,
+        DOCS_GIT_PROXY: current.gitProxy || "",
+        DOCS_BRANCH: doc.branch || `ufactory_doc_${docs}`,
+        DOCS_PUBLISH_HOST: current.publish.host,
+        DOCS_PUBLISH_USER: current.publish.user,
+        DOCS_PUBLISH_DIR: current.publish.remoteDir
+    };
+}
 
 // 同一时间只允许一个任务执行，避免多个 git/npm 进程并发操作同一个目录
 
 // 按顺序执行多个脚本，任一脚本失败则中止并通知前端
-async function executeScriptsSequentially(scripts) {
+async function executeScriptsSequentially(scripts, env) {
     for (const script of scripts) {
         try {
-            await executeScript(script);
+            await executeScript({
+                ...script,
+                env
+            });
         } catch (err) {
             sendWs(`有脚本执行出错：${err.message}。请重试`);
             return false;
@@ -46,7 +61,7 @@ async function executeScriptsSequentially(scripts) {
 function startJob(req, rsp, buildScripts, onSuccess) {
     const docs = req.body && req.body.docs;
 
-    if (!ALLOWED_DOCS.has(docs)) {
+    if (!findDocConfig(docs)) {
         return rsp.status(400).send({ message: `无效的文档类型：${docs}` });
     }
 
@@ -54,12 +69,13 @@ function startJob(req, rsp, buildScripts, onSuccess) {
         return rsp.status(409).send({ message: "已有任务正在执行，请等待完成后再操作" });
     }
 
+    const env = buildScriptEnv(docs);
     jobState.setRunning(true);
     rsp.status(200).send({ message: "脚本执行中" });
     // 通知所有页面任务开始，前端据此显示加载状态
     send({ job: { running: true } });
 
-    executeScriptsSequentially(buildScripts(docs))
+    executeScriptsSequentially(buildScripts(docs), env)
         .then((ok) => {
             if (ok && onSuccess) {
                 onSuccess(docs);
@@ -98,7 +114,7 @@ function publish(req, rsp) {
 // 动态获取文档第一页：加载文档仓库的 VitePress 配置，取侧边栏第一个链接，
 // 文档结构变化后无需改代码；识别失败时返回空字符串（链接退回站点根路径）
 async function getFirstPagePath(docs) {
-    const repoPath = `/app/ufactory_docs/${docs}`;
+    const repoPath = path.join(settings.get().deployRoot, docs);
     const outFile = path.join(os.tmpdir(), `first-page-${docs}-${Date.now()}.txt`);
 
     try {
@@ -144,7 +160,8 @@ function preview(req, rsp) {
 function executeScript({
     file,
     args = [],
-    timeout = 30 * 60 * 1000
+    timeout = 30 * 60 * 1000,
+    env = process.env
 }) {
     return new Promise((resolve, reject) => {
         const displayName = [file, ...args].join(" ");
@@ -153,6 +170,7 @@ function executeScript({
         // 用 bash 显式执行脚本：不依赖文件的执行权限，参数也不经过 shell 拼接；
         // maxBuffer 增大，避免构建日志超限导致子进程被杀死
         const deployProcess = execFile("bash", [file, ...args], {
+            env,
             maxBuffer: 10 * 1024 * 1024,
             timeout
         });

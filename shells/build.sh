@@ -3,7 +3,7 @@ set -o pipefail
 params1=$1
 
 # 日志目录：/app/logs 不存在或不可写时退回到临时目录，避免因日志问题中断部署
-LOG_DIR="/app/logs"
+LOG_DIR="${DOCS_LOG_DIR:-/app/logs}"
 if ! { mkdir -p "$LOG_DIR" && touch "$LOG_DIR/.write_test"; } 2>/dev/null; then
     LOG_DIR="${TMPDIR:-/tmp}/docs_build_logs"
     mkdir -p "$LOG_DIR" || { echo "无法创建日志目录 $LOG_DIR"; exit 1; }
@@ -24,7 +24,7 @@ if ! [[ "$params1" =~ ^[a-z0-9_]+$ ]]; then
 fi
 
 # 项目部署路径
-DEPLOY_PATH="/app/ufactory_docs/$params1"
+DEPLOY_PATH="${DOCS_ROOT:-/app/ufactory_docs}/$params1"
 
 # 切换到项目目录
 cd "$DEPLOY_PATH" || { log "无法进入目录 $DEPLOY_PATH"; exit 1; }

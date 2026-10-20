@@ -2,7 +2,7 @@
 params1=$1
 
 # 日志目录：/app/logs 不存在或不可写时退回到临时目录，避免因日志问题中断部署
-LOG_DIR="/app/logs"
+LOG_DIR="${DOCS_LOG_DIR:-/app/logs}"
 if ! { mkdir -p "$LOG_DIR" && touch "$LOG_DIR/.write_test"; } 2>/dev/null; then
     LOG_DIR="${TMPDIR:-/tmp}/docs_build_logs"
     mkdir -p "$LOG_DIR" || { echo "无法创建日志目录 $LOG_DIR"; exit 1; }
@@ -23,12 +23,12 @@ if ! [[ "$params1" =~ ^[a-z0-9_]+$ ]]; then
 fi
 
 # 定义本地目录路径，需要根据实际情况修改
-local_directory="/app/ufactory_docs/$params1/.vitepress/dist/"
+local_directory="${DOCS_ROOT:-/app/ufactory_docs}/$params1/.vitepress/dist/"
 
-# 定义服务器的地址、用户名和目标目录路径，需要根据实际情况修改
-server_address="3.138.33.79"
-server_username="ec2-user"
-server_target_directory="/home/ec2-user/ufactory_docs/$params1"
+# 定义服务器的地址、用户名和目标目录路径（页面配置优先，脚本默认值兜底）
+server_address="${DOCS_PUBLISH_HOST:-3.138.33.79}"
+server_username="${DOCS_PUBLISH_USER:-ec2-user}"
+server_target_directory="${DOCS_PUBLISH_DIR:-/home/ec2-user/ufactory_docs}/$params1"
 
 if [ ! -d "$local_directory" ]; then
     log "本地构建目录不存在：$local_directory，请先执行打包"

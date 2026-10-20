@@ -285,6 +285,92 @@
       background: var(--text-secondary);
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .proxy-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .proxy-mask[hidden] {
+      display: none;
+    }
+
+    .proxy-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      width: 420px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .proxy-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .proxy-head h2 {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .proxy-body {
+      padding: 16px 20px;
+    }
+
+    .proxy-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .proxy-field input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--btn-border);
+      border-radius: var(--radius);
+      background: var(--btn-bg);
+      color: var(--text-color);
+      font-size: 13px;
+    }
+
+    .proxy-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .proxy-msg {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .proxy-msg.error {
+      color: #dc2626;
+    }
+
+
     @media (max-width: 640px) {
       .container {
         padding: 16px;
@@ -313,7 +399,17 @@
   <div class="container">
     <div class="header">
       <h1>文档任务管理</h1>
-      <button class="theme-toggle" aria-label="切换主题">
+      <div class="header-actions">
+        <button class="theme-toggle" id="proxyButton" aria-label="代理设置">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.6 9h16.8M3.6 15h16.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.6-3.8-9S9.5 5.5 12 3z" />
+          </svg>
+          <span>代理</span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" aria-label="切换主题">
         <!-- 月亮图标 (深色主题) -->
         <svg class="moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -325,45 +421,13 @@
             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
         <span>切换主题</span>
-      </button>
+        </button>
+      </div>
     </div>
 
     <div class="document-selector">
       <h2>选择操作的文档:</h2>
-      <div class="radio-group">
-        <div class="radio-item">
-          <input type="radio" id="usermanual" name="document-type" value="usermanual" />
-          <label for="usermanual">User Manual</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="api" name="document-type" value="api" />
-          <label for="api">Api</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="support_article" name="document-type" value="support_article" />
-          <label for="support_article">Support Article</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="xarm" name="document-type" value="xarm" />
-          <label for="xarm">Xarm</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="850" name="document-type" value="850" />
-          <label for="850">850</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="lite6" name="document-type" value="lite6" />
-          <label for="lite6">Lite6</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="accessories" name="document-type" value="accessories" />
-          <label for="accessories">Accessories</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="releasenote" name="document-type" value="releasenote" />
-          <label for="releasenote">Releasenote</label>
-        </div>
-      </div>
+      <div class="radio-group" id="docsGroup"></div>
     </div>
 
     <div class="button-group">
@@ -415,9 +479,28 @@
     </div>
   </div>
 
+  <div class="proxy-mask" id="proxyMask" hidden>
+    <div class="proxy-panel">
+      <div class="proxy-head">
+        <h2>Git 代理</h2>
+        <button class="btn btn-small" id="proxyClose">关闭</button>
+      </div>
+      <div class="proxy-body">
+        <label class="proxy-field">
+          <span>代理地址（留空表示不使用代理）</span>
+          <input id="proxyInput" placeholder="http://host:port" />
+        </label>
+      </div>
+      <div class="proxy-actions">
+        <span class="proxy-msg" id="proxyMsg"></span>
+        <button class="btn" id="proxySave">保存</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 主题切换功能
-    const themeToggle = document.querySelector(".theme-toggle");
+    const themeToggle = document.getElementById("themeToggle");
     const html = document.documentElement;
     const moonIcon = document.querySelector(".moon");
     const sunIcon = document.querySelector(".sun");
@@ -467,6 +550,13 @@
     const publishButton = document.getElementById("publishButton");
     const previewButton = document.getElementById("previewButton");
     const clearLogButton = document.getElementById("clearLogButton");
+    const docsGroup = document.getElementById("docsGroup");
+    const proxyButton = document.getElementById("proxyButton");
+    const proxyMask = document.getElementById("proxyMask");
+    const proxyInput = document.getElementById("proxyInput");
+    const proxyMsg = document.getElementById("proxyMsg");
+    const proxyClose = document.getElementById("proxyClose");
+    const proxySave = document.getElementById("proxySave");
     // WebSocket 连接对象
     let socket;
     // 是否有任务正在执行（用于日志末尾的加载图标）
@@ -543,9 +633,10 @@
       }
     }
 
-    // 预览地址以可点击链接的形式显示（同一主机的 3040 端口）
+    // 预览地址以可点击链接的形式显示（同一主机，端口来自设置）
     function displayPreviewLink(path) {
-      const url = `http://${window.location.hostname}:3040/${path || ""}`;
+      const port = appSettings && appSettings.previewPort ? appSettings.previewPort : 3040;
+      const url = `http://${window.location.hostname}:${port}/${path || ""}`;
       const line = document.createElement("div");
       const label = document.createElement("span");
       label.textContent = "预览地址（第一页）：";
@@ -562,6 +653,97 @@
         logElement.appendChild(statusLine);
       }
       scrollLog();
+    }
+
+    // ===== 设置 =====
+    let appSettings = null;
+
+    async function loadSettings() {
+      try {
+        const res = await fetch("/settings");
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        appSettings = await res.json();
+        renderDocRadios();
+      } catch (err) {
+        displayLog(`加载设置失败: ${err.message}`);
+      }
+    }
+
+    function renderDocRadios() {
+      if (!appSettings) {
+        return;
+      }
+      const selected = document.querySelector(
+        'input[name="document-type"]:checked'
+      );
+      const selectedValue = selected ? selected.value : null;
+      docsGroup.innerHTML = "";
+      appSettings.docs.forEach((doc) => {
+        const item = document.createElement("div");
+        item.className = "radio-item";
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "document-type";
+        input.id = `doc-${doc.value}`;
+        input.value = doc.value;
+        if (selectedValue === doc.value) {
+          input.checked = true;
+        }
+        const label = document.createElement("label");
+        label.htmlFor = input.id;
+        label.textContent = doc.label;
+        item.appendChild(input);
+        item.appendChild(label);
+        docsGroup.appendChild(item);
+      });
+    }
+
+    // ===== Git 代理设置 =====
+    function openProxy() {
+      if (!appSettings) {
+        return;
+      }
+      proxyInput.value = appSettings.gitProxy || "";
+      proxyMsg.textContent = "";
+      proxyMsg.classList.remove("error");
+      proxyMask.hidden = false;
+      proxyInput.focus();
+    }
+
+    function closeProxy() {
+      proxyMask.hidden = true;
+    }
+
+    async function saveProxy() {
+      if (!appSettings) {
+        return;
+      }
+      proxyMsg.classList.remove("error");
+      proxyMsg.textContent = "保存中...";
+      try {
+        const res = await fetch("/settings", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ...appSettings,
+            gitProxy: proxyInput.value.trim()
+          })
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(text);
+        }
+        appSettings = JSON.parse(text);
+        proxyMsg.textContent = "已保存";
+        setTimeout(closeProxy, 600);
+      } catch (err) {
+        proxyMsg.classList.add("error");
+        proxyMsg.textContent = `保存失败: ${err.message}`;
+      }
     }
 
     let reconnectTimer = null;
@@ -642,6 +824,16 @@
       }
     });
 
+    proxyButton.addEventListener("click", openProxy);
+    proxyClose.addEventListener("click", closeProxy);
+    proxySave.addEventListener("click", saveProxy);
+    proxyMask.addEventListener("click", (event) => {
+      if (event.target === proxyMask) {
+        closeProxy();
+      }
+    });
+
+    loadSettings();
     connectWebSocket();
   </script>
 </body>
