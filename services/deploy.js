@@ -3,8 +3,13 @@ const {
 } = require("child_process");
 
 const {
-    sendWs
+    sendWs,
+    send
 } = require("../libs/ws");
+
+const {
+    getFirstPagePath
+} = require("../libs/preview-paths");
 
 // 允许操作的文档类型白名单，白名单之外一律拒绝
 const ALLOWED_DOCS = new Set([
@@ -28,13 +33,14 @@ async function executeScriptsSequentially(scripts) {
             await executeScript(script);
         } catch (err) {
             sendWs(`有脚本执行出错：${err.message}。请重试`);
-            return;
+            return false;
         }
     }
+    return true;
 }
 
 // 统一入口：校验参数、加互斥锁、串行执行脚本
-function startJob(req, rsp, buildScripts) {
+function startJob(req, rsp, buildScripts, onSuccess) {
     const docs = req.body && req.body.docs;
 
     if (!ALLOWED_DOCS.has(docs)) {
@@ -48,9 +54,15 @@ function startJob(req, rsp, buildScripts) {
     isRunning = true;
     rsp.status(200).send({ message: "脚本执行中" });
 
-    executeScriptsSequentially(buildScripts(docs)).finally(() => {
-        isRunning = false;
-    });
+    executeScriptsSequentially(buildScripts(docs))
+        .then((ok) => {
+            if (ok && onSuccess) {
+                onSuccess(docs);
+            }
+        })
+        .finally(() => {
+            isRunning = false;
+        });
 }
 
 function pull(req, rsp) {
@@ -81,7 +93,15 @@ function preview(req, rsp) {
     startJob(req, rsp, (docs) => [
         { file: "./shells/kill_preview.sh" },
         { file: "./shells/preview.sh", args: [docs] }
-    ]);
+    ], (docs) => {
+        // 预览启动成功后把第一页路径推给前端，由前端拼上当前主机名和 3040 端口
+        send({
+            preview: {
+                docs,
+                path: getFirstPagePath(docs)
+            }
+        });
+    });
 }
 
 

@@ -191,6 +191,16 @@
       background-color: var(--bg-gray);
     }
 
+    .preview-link {
+      color: var(--primary-color);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+
+    .preview-link:hover {
+      color: var(--primary-hover);
+    }
+
     .log-container {
       background-color: var(--log-bg);
       border: 1px solid var(--border-color);
@@ -447,6 +457,25 @@
       container.scrollTop = container.scrollHeight;
     }
 
+    // 预览地址以可点击链接的形式显示（同一主机的 3040 端口）
+    function displayPreviewLink(path) {
+      const url = `http://${window.location.hostname}:3040/${path || ""}`;
+      const line = document.createElement("div");
+      const label = document.createElement("span");
+      label.textContent = "预览地址（第一页）：";
+      const link = document.createElement("a");
+      link.className = "preview-link";
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = url;
+      line.appendChild(label);
+      line.appendChild(link);
+      logElement.appendChild(line);
+      const container = logElement.parentElement;
+      container.scrollTop = container.scrollHeight;
+    }
+
     let reconnectTimer = null;
 
     // 连接 WebSocket 并接收日志，断线后自动重连
@@ -467,7 +496,9 @@
         }
         try {
           const data = JSON.parse(event.data);
-          if (data.log !== undefined) {
+          if (data.preview) {
+            displayPreviewLink(data.preview.path);
+          } else if (data.log !== undefined) {
             displayLog(data.log); // 显示日志
           }
         } catch (err) {
