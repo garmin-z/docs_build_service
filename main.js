@@ -4,6 +4,7 @@ const {
     sendWs,
     send
 } = require("./libs/ws");
+const jobState = require("./libs/job-state");
 
 
 
@@ -33,6 +34,14 @@ app.server.on("upgrade", (request, socket, head) => {
                     cmd: "heartbeat",
                     data: "ok"
                 })
+            }
+            // 客户端主动查询任务状态（页面刷新/重连后恢复加载图标）
+            if (payload && payload.cmd === "status") {
+                send({
+                    job: {
+                        running: jobState.isRunning()
+                    }
+                });
             }
             console.log(`Received: ${message}`)
         });

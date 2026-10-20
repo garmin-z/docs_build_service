@@ -191,6 +191,29 @@
       background-color: var(--bg-gray);
     }
 
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    .log-wrapper {
+      position: relative;
+    }
+
+    .log-clear-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+      opacity: 0.85;
+      background-color: var(--card-bg);
+    }
+
+    .log-clear-btn:hover {
+      opacity: 1;
+      background-color: var(--bg-gray);
+    }
+
     .preview-link {
       color: var(--primary-color);
       text-decoration: underline;
@@ -199,6 +222,30 @@
 
     .preview-link:hover {
       color: var(--primary-hover);
+    }
+
+    .log-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .log-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: log-spin 0.8s linear infinite;
+    }
+
+    @keyframes log-spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .log-container {
@@ -360,8 +407,11 @@
       </button>
     </div>
 
-    <div class="log-container">
-      <div class="log-content" id="log"></div>
+    <div class="log-wrapper">
+      <button class="btn btn-small log-clear-btn" id="clearLogButton">清空日志</button>
+      <div class="log-container">
+        <div class="log-content" id="log"></div>
+      </div>
     </div>
   </div>
 
@@ -416,8 +466,12 @@
     const buildButton = document.getElementById("buildButton");
     const publishButton = document.getElementById("publishButton");
     const previewButton = document.getElementById("previewButton");
+    const clearLogButton = document.getElementById("clearLogButton");
     // WebSocket 连接对象
     let socket;
+    // 是否有任务正在执行（用于日志末尾的加载图标）
+    let taskRunning = false;
+    let statusLine = null;
 
     async function action(method) {
       const selectedRadio = document.querySelector(
@@ -448,13 +502,45 @@
       }
     }
     // 日志显示函数
+    function scrollLog() {
+      // 滚动的容器是 .log-container，而不是里面的 .log-content
+      const container = logElement.parentElement;
+      container.scrollTop = container.scrollHeight;
+    }
+
     function displayLog(message) {
       const logMessage = document.createElement("div");
       logMessage.textContent = message;
       logElement.appendChild(logMessage);
-      // 滚动的容器是 .log-container，而不是里面的 .log-content
-      const container = logElement.parentElement;
-      container.scrollTop = container.scrollHeight;
+      // 任务执行中时，保证加载图标始终在最后一行
+      if (taskRunning && statusLine) {
+        logElement.appendChild(statusLine);
+      }
+      scrollLog();
+    }
+
+    // 任务执行中：在日志末尾显示加载图标；清空日志后仍保留
+    function showSpinner() {
+      taskRunning = true;
+      if (!statusLine) {
+        statusLine = document.createElement("div");
+        statusLine.className = "log-status";
+        const icon = document.createElement("span");
+        icon.className = "log-spinner";
+        const text = document.createElement("span");
+        text.textContent = "任务执行中...";
+        statusLine.appendChild(icon);
+        statusLine.appendChild(text);
+      }
+      logElement.appendChild(statusLine);
+      scrollLog();
+    }
+
+    function hideSpinner() {
+      taskRunning = false;
+      if (statusLine && statusLine.parentElement) {
+        statusLine.parentElement.removeChild(statusLine);
+      }
     }
 
     // 预览地址以可点击链接的形式显示（同一主机的 3040 端口）
@@ -472,8 +558,10 @@
       line.appendChild(label);
       line.appendChild(link);
       logElement.appendChild(line);
-      const container = logElement.parentElement;
-      container.scrollTop = container.scrollHeight;
+      if (taskRunning && statusLine) {
+        logElement.appendChild(statusLine);
+      }
+      scrollLog();
     }
 
     let reconnectTimer = null;
@@ -490,13 +578,26 @@
       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
       socket = new WebSocket(`${protocol}://${window.location.host}`);
 
+      socket.onopen = () => {
+        // 连接建立后主动查询一次任务状态，刷新/重连后也能恢复加载图标
+        socket.send(JSON.stringify({
+          cmd: "status"
+        }));
+      };
+
       socket.onmessage = (event) => {
         if (!event.data) {
           return;
         }
         try {
           const data = JSON.parse(event.data);
-          if (data.preview) {
+          if (data.job) {
+            if (data.job.running) {
+              showSpinner();
+            } else {
+              hideSpinner();
+            }
+          } else if (data.preview) {
             displayPreviewLink(data.preview.path);
           } else if (data.log !== undefined) {
             displayLog(data.log); // 显示日志
@@ -530,6 +631,15 @@
     });
     publishButton.addEventListener("click", () => {
       action("publish");
+    });
+
+    // 清空页面上的日志显示（不影响服务端保存的日志文件）
+    clearLogButton.addEventListener("click", () => {
+      logElement.innerHTML = "";
+      // 任务还在执行时，清空后仍保留末尾的加载图标
+      if (taskRunning && statusLine) {
+        logElement.appendChild(statusLine);
+      }
     });
 
     connectWebSocket();

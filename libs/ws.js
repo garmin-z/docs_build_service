@@ -1,4 +1,5 @@
 const WebSocket = require("ws");
+const jobState = require("./job-state");
 
 // 用于存储WebSocket服务器单例实例和连接的客户端
 let webSocketServerInstance;
@@ -19,6 +20,17 @@ const newWebSocketServerInstance = () => {
 
             // 发送初始日志给新客户端（只发给当前连接，不广播）
             sendToClient(ws, "连接成功!");
+
+            // 同步当前任务状态：刷新页面后仍能显示加载图标
+            try {
+                ws.send(JSON.stringify({
+                    job: {
+                        running: jobState.isRunning()
+                    }
+                }));
+            } catch (error) {
+                console.error(`发送任务状态给客户端时出错: ${error}`);
+            }
 
             // 设置客户端事件监听器
             handleClientEvents(ws);

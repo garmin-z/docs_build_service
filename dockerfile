@@ -19,6 +19,11 @@ RUN npm install --registry=https://registry.npmmirror.com/
 # 复制项目的所有源代码到工作目录
 COPY . .
 
+# 预建运行期目录并放开写权限：容器可能以非 root 用户运行，
+# 否则 /app/logs、/app/ufactory_docs 无法创建（部署脚本会报 Permission denied）
+RUN mkdir -p /app/logs /app/ufactory_docs \
+    && chmod 777 /app/logs /app/ufactory_docs
+
 # 暴露服务器监听的端口
 EXPOSE 3000
 EXPOSE 3040

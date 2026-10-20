@@ -1,3 +1,5 @@
 node_modules/
 pdf/
 ufactory_docs_service.tar
+logs/
+ufactory_docs/

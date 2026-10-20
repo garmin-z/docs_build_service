@@ -2,12 +2,16 @@
 set -o pipefail
 params1=$1
 
-# 日志文件路径
+# 日志目录：/app/logs 不存在或不可写时退回到临时目录，避免因日志问题中断部署
 LOG_DIR="/app/logs"
+if ! { mkdir -p "$LOG_DIR" && touch "$LOG_DIR/.write_test"; } 2>/dev/null; then
+    LOG_DIR="${TMPDIR:-/tmp}/docs_build_logs"
+    mkdir -p "$LOG_DIR" || { echo "无法创建日志目录 $LOG_DIR"; exit 1; }
+    echo "警告：/app/logs 不可写，日志改存到 $LOG_DIR"
+else
+    rm -f "$LOG_DIR/.write_test"
+fi
 LOG_FILE="$LOG_DIR/deploy_$(date +'%Y_%m_%d').log"
-
-# 创建日志目录
-mkdir -p "$LOG_DIR" || { echo "无法创建日志目录 $LOG_DIR"; exit 1; }
 
 log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"

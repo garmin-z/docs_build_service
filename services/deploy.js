@@ -11,6 +11,8 @@ const {
     send
 } = require("../libs/ws");
 
+const jobState = require("../libs/job-state");
+
 const execFileAsync = promisify(execFile);
 
 // 允许操作的文档类型白名单，白名单之外一律拒绝
@@ -26,7 +28,6 @@ const ALLOWED_DOCS = new Set([
 ]);
 
 // 同一时间只允许一个任务执行，避免多个 git/npm 进程并发操作同一个目录
-let isRunning = false;
 
 // 按顺序执行多个脚本，任一脚本失败则中止并通知前端
 async function executeScriptsSequentially(scripts) {
@@ -49,12 +50,14 @@ function startJob(req, rsp, buildScripts, onSuccess) {
         return rsp.status(400).send({ message: `无效的文档类型：${docs}` });
     }
 
-    if (isRunning) {
+    if (jobState.isRunning()) {
         return rsp.status(409).send({ message: "已有任务正在执行，请等待完成后再操作" });
     }
 
-    isRunning = true;
+    jobState.setRunning(true);
     rsp.status(200).send({ message: "脚本执行中" });
+    // 通知所有页面任务开始，前端据此显示加载状态
+    send({ job: { running: true } });
 
     executeScriptsSequentially(buildScripts(docs))
         .then((ok) => {
@@ -63,7 +66,8 @@ function startJob(req, rsp, buildScripts, onSuccess) {
             }
         })
         .finally(() => {
-            isRunning = false;
+            jobState.setRunning(false);
+            send({ job: { running: false } });
         });
 }
 
