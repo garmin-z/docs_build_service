@@ -12,18 +12,18 @@ const {
 } = require("../libs/ws");
 
 const jobState = require("../libs/job-state");
-const settings = require("../libs/settings");
+const configs = require("../libs/configs");
 
 const execFileAsync = promisify(execFile);
 
 // 文档类型来自配置文件
 function findDocConfig(docs) {
-    return settings.get().docs.find((doc) => doc.value === docs);
+    return configs.get().docs.find((doc) => doc.value === docs);
 }
 
 // 把配置转成脚本环境变量（shell 脚本里用 ${DOCS_xxx:-默认值} 兜底）
 function buildScriptEnv(docs) {
-    const current = settings.get();
+    const current = configs.get();
     const doc = current.docs.find((item) => item.value === docs) || {};
     return {
         ...process.env,
@@ -38,8 +38,6 @@ function buildScriptEnv(docs) {
         DOCS_PUBLISH_DIR: current.publish.remoteDir
     };
 }
-
-// 同一时间只允许一个任务执行，避免多个 git/npm 进程并发操作同一个目录
 
 // 按顺序执行多个脚本，任一脚本失败则中止并通知前端
 async function executeScriptsSequentially(scripts, env) {
@@ -58,33 +56,45 @@ async function executeScriptsSequentially(scripts, env) {
 }
 
 // 统一入口：校验参数、加互斥锁、串行执行脚本
-function startJob(req, rsp, buildScripts, onSuccess) {
-    const docs = req.body && req.body.docs;
+async function startJob(req, rsp, buildScripts, onSuccess) {
+    try {
+        const docs = req.body && req.body.docs;
 
-    if (!findDocConfig(docs)) {
-        return rsp.status(400).send({ message: `无效的文档类型：${docs}` });
+        // 文档列表来自 git 分支：缓存未命中时先刷新一次，避免刚新增的分支不可用
+        if (!findDocConfig(docs)) {
+            await configs.ensureDocs();
+        }
+
+        if (!findDocConfig(docs)) {
+            return rsp.status(400).send({ message: `无效的文档类型：${docs}` });
+        }
+
+        if (jobState.isRunning()) {
+            return rsp.status(409).send({ message: "已有任务正在执行，请等待完成后再操作" });
+        }
+
+        const env = buildScriptEnv(docs);
+        jobState.setRunning(true);
+        rsp.status(200).send({ message: "脚本执行中" });
+        // 通知所有页面任务开始，前端据此显示加载状态
+        send({ job: { running: true } });
+
+        executeScriptsSequentially(buildScripts(docs), env)
+            .then((ok) => {
+                if (ok && onSuccess) {
+                    onSuccess(docs);
+                }
+            })
+            .finally(() => {
+                jobState.setRunning(false);
+                send({ job: { running: false } });
+            });
+    } catch (err) {
+        sendWs(`任务启动失败：${err.message}`);
+        if (!rsp.headersSent) {
+            rsp.status(500).send({ message: err.message });
+        }
     }
-
-    if (jobState.isRunning()) {
-        return rsp.status(409).send({ message: "已有任务正在执行，请等待完成后再操作" });
-    }
-
-    const env = buildScriptEnv(docs);
-    jobState.setRunning(true);
-    rsp.status(200).send({ message: "脚本执行中" });
-    // 通知所有页面任务开始，前端据此显示加载状态
-    send({ job: { running: true } });
-
-    executeScriptsSequentially(buildScripts(docs), env)
-        .then((ok) => {
-            if (ok && onSuccess) {
-                onSuccess(docs);
-            }
-        })
-        .finally(() => {
-            jobState.setRunning(false);
-            send({ job: { running: false } });
-        });
 }
 
 function pull(req, rsp) {
@@ -114,7 +124,7 @@ function publish(req, rsp) {
 // 动态获取文档第一页：加载文档仓库的 VitePress 配置，取侧边栏第一个链接，
 // 文档结构变化后无需改代码；识别失败时返回空字符串（链接退回站点根路径）
 async function getFirstPagePath(docs) {
-    const repoPath = path.join(settings.get().deployRoot, docs);
+    const repoPath = path.join(configs.get().deployRoot, docs);
     const outFile = path.join(os.tmpdir(), `first-page-${docs}-${Date.now()}.txt`);
 
     try {

@@ -1,6 +1,6 @@
 const express = require("express");
 const deploy = require("../services/deploy");
-const settings = require("./settings");
+const configs = require("./configs");
 const jobState = require("./job-state");
 const cors = require("cors");
 const path = require("path");
@@ -31,8 +31,14 @@ const getAppInstance = (port = 3000) => {
         });
 
         // 配置读取/保存
-        appInstance.get("/settings", (req, rsp) => {
-            rsp.json(settings.get());
+        appInstance.get("/settings", async (req, rsp) => {
+            try {
+                // 文档列表来自 git 分支，缓存过期时等待刷新
+                await configs.ensureDocs();
+                rsp.json(configs.get());
+            } catch (err) {
+                rsp.status(500).send({ message: err.message });
+            }
         });
 
         appInstance.put("/settings", (req, rsp) => {
@@ -40,7 +46,7 @@ const getAppInstance = (port = 3000) => {
                 return rsp.status(409).send({ message: "有任务正在执行，暂时不能修改设置" });
             }
             try {
-                rsp.json(settings.update(req.body));
+                rsp.json(configs.update(req.body));
             } catch (err) {
                 rsp.status(400).send({ message: err.message });
             }
