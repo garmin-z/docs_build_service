@@ -409,7 +409,7 @@
     // WebSocket 连接对象
     let socket;
 
-    function action(method) {
+    async function action(method) {
       const selectedRadio = document.querySelector(
         'input[name="document-type"]:checked'
       );
@@ -419,55 +419,72 @@
         return;
       }
 
-      fetch(window.location.origin + "/" + method, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          docs: selectedRadio.value,
-        }),
-      }).then((res) => {
-        return res.text();
-      });
+      try {
+        const res = await fetch(window.location.origin + "/" + method, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            docs: selectedRadio.value,
+          }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          displayLog(`请求 ${method} 失败 (${res.status}): ${text}`);
+        }
+      } catch (err) {
+        displayLog(`请求 ${method} 失败: ${err.message}`);
+      }
     }
     // 日志显示函数
     function displayLog(message) {
       const logMessage = document.createElement("div");
       logMessage.textContent = message;
       logElement.appendChild(logMessage);
-      logElement.scrollTop = logElement.scrollHeight; // 滚动到底部
+      // 滚动的容器是 .log-container，而不是里面的 .log-content
+      const container = logElement.parentElement;
+      container.scrollTop = container.scrollHeight;
     }
 
-    // 连接 WebSocket 并接收日志
+    let reconnectTimer = null;
+
+    // 连接 WebSocket 并接收日志，断线后自动重连
     function connectWebSocket() {
       // 如果已有连接，则关闭
       if (socket) {
+        socket.onclose = null;
         socket.close();
       }
 
-      // 建立 WebSocket 连接
-      socket = new WebSocket(`ws://${window.location.host}`);
-
-      socket.onopen = () => { };
+      // 页面用 https 打开时必须用 wss，否则浏览器会拦截连接
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      socket = new WebSocket(`${protocol}://${window.location.host}`);
 
       socket.onmessage = (event) => {
-        if (event.data) {
+        if (!event.data) {
+          return;
+        }
+        try {
           const data = JSON.parse(event.data);
-          displayLog(data.log); // 显示日志
+          if (data.log !== undefined) {
+            displayLog(data.log); // 显示日志
+          }
+        } catch (err) {
+          displayLog(event.data);
         }
       };
 
-      socket.onerror = (error) => {
-        displayLog(`WebSocket 错误: ${error.message}`);
+      socket.onerror = () => {
+        // 浏览器不会提供具体错误信息，onclose 里统一提示并重连
       };
 
       socket.onclose = () => {
-        displayLog(`${endpoint} 连接已关闭`);
+        displayLog("WebSocket 连接已断开，3 秒后自动重连...");
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectWebSocket, 3000);
       };
     }
-
-    console.log(pullButton);
 
     // 按钮事件处理
     pullButton.addEventListener("click", () => {
@@ -484,7 +501,7 @@
       action("publish");
     });
 
-    connectWebSocket("ws");
+    connectWebSocket();
   </script>
 </body>
 

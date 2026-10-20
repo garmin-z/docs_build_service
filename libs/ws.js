@@ -17,8 +17,8 @@ const newWebSocketServerInstance = () => {
             // 添加新客户端到连接列表
             connectedClients.push(ws);
 
-            // 发送初始日志给新客户端
-            sendWs("连接成功!");
+            // 发送初始日志给新客户端（只发给当前连接，不广播）
+            sendToClient(ws, "连接成功!");
 
             // 设置客户端事件监听器
             handleClientEvents(ws);
@@ -63,6 +63,19 @@ const sendWs = (message) => {
     });
 };
 
+// 只给单个客户端发送日志
+const sendToClient = (ws, message) => {
+    if (ws.readyState === WebSocket.OPEN) {
+        try {
+            ws.send(JSON.stringify({
+                log: message
+            }));
+        } catch (error) {
+            console.error(`发送日志给客户端时出错: ${error}`);
+        }
+    }
+};
+
 const send = (message) => {
     connectedClients.forEach((ws) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -79,5 +92,6 @@ const send = (message) => {
 module.exports = {
     newWebSocketServerInstance,
     sendWs,
+    sendToClient,
     send
 };

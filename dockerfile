@@ -15,8 +15,6 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm install --registry=https://registry.npmmirror.com/
-# 安装项目依赖，包括puppeteer等
-RUN npm install
 
 # 复制项目的所有源代码到工作目录
 COPY . .

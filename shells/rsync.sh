@@ -12,33 +12,39 @@ log() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
 
+# 参数校验：只允许小写字母、数字、下划线，避免拼出错误的远程路径
+if ! [[ "$params1" =~ ^[a-z0-9_]+$ ]]; then
+    log "非法参数： 【$params1】"
+    exit 1
+fi
 
 # 定义本地目录路径，需要根据实际情况修改
 local_directory="/app/ufactory_docs/$params1/.vitepress/dist/"
-# local_directory="/mnt/d/code/ufactory_docs/.vitepress/dist/"
 
 # 定义服务器的地址、用户名和目标目录路径，需要根据实际情况修改
 server_address="3.138.33.79"
 server_username="ec2-user"
 server_target_directory="/home/ec2-user/ufactory_docs/$params1"
-log "准备开始发布到服务器"
 
-# 先清空远程服务器上的目标目录
-log "开始清空远程服务器上的目标目录 $server_target_directory"
-ssh "$server_username@$server_address" "rm -rf $server_target_directory/*"
-if [ $? -eq 0 ]; then
-    log "成功清空远程服务器上的目标目录"
-else
-    log "清空远程服务器上的目标目录失败，请检查相关权限和连接情况"
+if [ ! -d "$local_directory" ]; then
+    log "本地构建目录不存在：$local_directory，请先执行打包"
     exit 1
 fi
 
-# 使用rsync进行上传
-rsync -avz --progress $local_directory $server_username@$server_address:$server_target_directory && log "上传"
+log "准备开始发布到服务器 $server_address:$server_target_directory"
 
-# 检查rsync的返回值，以确定上传是否成功
-if [ $? -eq 0 ]; then
+# 确保远程目标目录存在；不再先整体清空目录，避免上传失败时站点变成空的
+if ! ssh -o BatchMode=yes -o ConnectTimeout=10 "$server_username@$server_address" \
+    "mkdir -p '$server_target_directory'"; then
+    log "连接服务器或创建目标目录失败，请检查网络和密钥配置"
+    exit 1
+fi
+
+# 使用 rsync --delete 同步：增量上传并删除远端多余文件，无需事先清空目录
+if rsync -avz --delete --progress -e "ssh -o BatchMode=yes -o ConnectTimeout=10" \
+    "$local_directory" "$server_username@$server_address:$server_target_directory/"; then
     log "上传服务器成功"
 else
     log "上传服务器失败，请检查相关设置和网络连接等情况"
+    exit 1
 fi
