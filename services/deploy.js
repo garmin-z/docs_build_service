@@ -1,15 +1,17 @@
 const {
     execFile
 } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { promisify } = require("util");
 
 const {
     sendWs,
     send
 } = require("../libs/ws");
 
-const {
-    getFirstPagePath
-} = require("../libs/preview-paths");
+const execFileAsync = promisify(execFile);
 
 // 允许操作的文档类型白名单，白名单之外一律拒绝
 const ALLOWED_DOCS = new Set([
@@ -89,16 +91,42 @@ function publish(req, rsp) {
 }
 
 
+// 动态获取文档第一页：加载文档仓库的 VitePress 配置，取侧边栏第一个链接，
+// 文档结构变化后无需改代码；识别失败时返回空字符串（链接退回站点根路径）
+async function getFirstPagePath(docs) {
+    const repoPath = `/app/ufactory_docs/${docs}`;
+    const outFile = path.join(os.tmpdir(), `first-page-${docs}-${Date.now()}.txt`);
+
+    try {
+        await execFileAsync("node", [
+            path.join(__dirname, "../shells/first-page.js"),
+            repoPath,
+            outFile
+        ], {
+            timeout: 30 * 1000,
+            maxBuffer: 1024 * 1024
+        });
+        return fs.readFileSync(outFile, "utf8").trim();
+    } catch (err) {
+        const reason = String(err.message || err).split("\n")[0];
+        sendWs(`未能自动识别第一页（${reason}），预览链接将打开站点根路径`);
+        return "";
+    } finally {
+        fs.unlink(outFile, () => {});
+    }
+}
+
 function preview(req, rsp) {
     startJob(req, rsp, (docs) => [
         { file: "./shells/kill_preview.sh" },
         { file: "./shells/preview.sh", args: [docs] }
-    ], (docs) => {
+    ], async (docs) => {
+        const firstPagePath = await getFirstPagePath(docs);
         // 预览启动成功后把第一页路径推给前端，由前端拼上当前主机名和 3040 端口
         send({
             preview: {
                 docs,
-                path: getFirstPagePath(docs)
+                path: firstPagePath
             }
         });
     });
