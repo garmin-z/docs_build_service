@@ -26,6 +26,10 @@ const getAppInstance = (port = 3000) => {
             rsp.sendFile(path.join(__dirname, '../views', 'index.html'));
         });
 
+        appInstance.get("/favicon.ico", (req, rsp) => {
+            rsp.sendFile(path.join(__dirname, '../views', 'favicon.ico'));
+        });
+
         // 配置读取/保存
         appInstance.get("/settings", (req, rsp) => {
             rsp.json(settings.get());
