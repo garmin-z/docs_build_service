@@ -2,6 +2,7 @@ const express = require("express");
 const deploy = require("../services/deploy");
 const configs = require("./configs");
 const jobState = require("./job-state");
+const { send } = require("./ws");
 const cors = require("cors");
 const path = require("path");
 const bodyParser = require('body-parser');
@@ -31,14 +32,13 @@ const getAppInstance = (port = 3000) => {
         });
 
         // 配置读取/保存
-        appInstance.get("/settings", async (req, rsp) => {
-            try {
-                // 文档列表来自 git 分支，缓存过期时等待刷新
-                await configs.ensureDocs();
-                rsp.json(configs.get());
-            } catch (err) {
-                rsp.status(500).send({ message: err.message });
-            }
+        appInstance.get("/settings", (req, rsp) => {
+            // 先用 config.json 里的配置立即响应（页面刷新默认取本地配置）
+            rsp.json(configs.get());
+            // 随后在后台与 git ls-remote 同步，有差异会写回 config.json 并推送页面
+            configs.syncDocs().catch((err) => {
+                console.error(`同步文档分支失败：${err.message}`);
+            });
         });
 
         appInstance.put("/settings", (req, rsp) => {
@@ -50,6 +50,13 @@ const getAppInstance = (port = 3000) => {
             } catch (err) {
                 rsp.status(400).send({ message: err.message });
             }
+        });
+
+        // 分支列表有差异并写回 config.json 后，推送页面更新文档列表
+        configs.onDocsChanged((docs) => {
+            send({
+                docs
+            });
         });
 
         // 部署端点

@@ -782,6 +782,12 @@
             }
           } else if (data.preview) {
             displayPreviewLink(data.preview.path);
+          } else if (data.docs) {
+            // 后台与 git 同步后分支有变化，更新文档列表
+            if (appSettings) {
+              appSettings.docs = data.docs;
+              renderDocRadios();
+            }
           } else if (data.log !== undefined) {
             displayLog(data.log); // 显示日志
           }

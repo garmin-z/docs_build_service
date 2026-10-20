@@ -60,9 +60,9 @@ async function startJob(req, rsp, buildScripts, onSuccess) {
     try {
         const docs = req.body && req.body.docs;
 
-        // 文档列表来自 git 分支：缓存未命中时先刷新一次，避免刚新增的分支不可用
+        // 文档列表来自 git 分支：本地配置里没有时，立即与远端同步一次再判断
         if (!findDocConfig(docs)) {
-            await configs.ensureDocs();
+            await configs.syncDocs(true);
         }
 
         if (!findDocConfig(docs)) {
