@@ -23,9 +23,9 @@ RUN npm install
 COPY . .
 
 # 预建运行期目录并放开写权限：容器可能以非 root 用户运行，
-# 否则 /app/logs、/app/ufactory_docs、/app/config 无法创建（部署脚本会报 Permission denied）
-RUN mkdir -p /app/logs /app/ufactory_docs /app/config \
-    && chmod 777 /app/logs /app/ufactory_docs /app/config
+# 否则 /app/logs、/app/ufactory_docs 无法创建（部署脚本会报 Permission denied）
+RUN mkdir -p /app/logs /app/ufactory_docs \
+    && chmod 777 /app/logs /app/ufactory_docs
 
 # 暴露服务器监听的端口
 EXPOSE 3000

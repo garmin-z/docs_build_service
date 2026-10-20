@@ -1,23 +1,19 @@
+// 站点配置：直接维护下面的 CONFIG 对象。
+// 页面保存代理等设置时，服务端只重写该对象这一段，下面的代码保持不变。
 const fs = require("fs");
-const path = require("path");
 
-// 配置文件默认放在 /app/config/settings.json（可通过环境变量覆盖，便于本地调试）
-const SETTINGS_FILE = process.env.DOCS_SETTINGS_FILE || "/app/config/settings.json";
-
-// 默认文档列表：顺序即页面上的展示顺序
-const DEFAULT_DOCS = [
-    { value: "usermanual", label: "User Manual", branch: "ufactory_doc_usermanual" },
-    { value: "api", label: "Api", branch: "ufactory_doc_api" },
-    { value: "support_article", label: "Support Article", branch: "ufactory_doc_support_article" },
-    { value: "xarm", label: "Xarm", branch: "ufactory_doc_xarm" },
-    { value: "850", label: "850", branch: "ufactory_doc_850" },
-    { value: "lite6", label: "Lite6", branch: "ufactory_doc_lite6" },
-    { value: "accessories", label: "Accessories", branch: "ufactory_doc_accessories" },
-    { value: "releasenote", label: "Releasenote", branch: "ufactory_doc_releasenote" }
-];
-
-const DEFAULTS = {
-    docs: DEFAULT_DOCS,
+// >>> CONFIG START（页面保存设置时会重写这一段，可手动修改）
+const CONFIG = {
+    docs: [
+        { value: "usermanual", label: "User Manual", branch: "ufactory_doc_usermanual" },
+        { value: "api", label: "Api", branch: "ufactory_doc_api" },
+        { value: "support_article", label: "Support Article", branch: "ufactory_doc_support_article" },
+        { value: "xarm", label: "Xarm", branch: "ufactory_doc_xarm" },
+        { value: "850", label: "850", branch: "ufactory_doc_850" },
+        { value: "lite6", label: "Lite6", branch: "ufactory_doc_lite6" },
+        { value: "accessories", label: "Accessories", branch: "ufactory_doc_accessories" },
+        { value: "releasenote", label: "Releasenote", branch: "ufactory_doc_releasenote" }
+    ],
     gitRepo: "https://github.com/xArm-Developer/ufactory_docs.git",
     gitProxy: "http://192.168.1.176:8016",
     deployRoot: "/app/ufactory_docs",
@@ -29,6 +25,7 @@ const DEFAULTS = {
         remoteDir: "/home/ec2-user/ufactory_docs"
     }
 };
+// <<< CONFIG END
 
 const DOC_VALUE_RE = /^[a-z0-9_]+$/;
 const BRANCH_RE = /^[A-Za-z0-9._/-]+$/;
@@ -44,7 +41,7 @@ function isAbsolute(value) {
     return typeof value === "string" && value.startsWith("/") && !value.includes("\n");
 }
 
-// 校验并整理设置内容，返回可直接保存的对象
+// 校验并整理设置内容，返回可直接使用的对象
 function validate(input) {
     if (!input || typeof input !== "object") {
         throw new Error("设置内容格式不正确");
@@ -127,26 +124,31 @@ function validate(input) {
     };
 }
 
-function load() {
-    try {
-        const raw = fs.readFileSync(SETTINGS_FILE, "utf8");
-        return validate(JSON.parse(raw));
-    } catch (err) {
-        if (err.code !== "ENOENT") {
-            console.error(`读取配置文件失败，使用默认配置：${err.message}`);
-        }
-        return validate(DEFAULTS);
-    }
+let current;
+try {
+    current = validate(CONFIG);
+} catch (err) {
+    console.error(`settings.js 中的配置不合法：${err.message}`);
+    process.exit(1);
 }
 
-let current = load();
-
-function save(next) {
-    const dir = path.dirname(SETTINGS_FILE);
-    fs.mkdirSync(dir, { recursive: true });
-    const tmp = `${SETTINGS_FILE}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(next, null, 2), "utf8");
-    fs.renameSync(tmp, SETTINGS_FILE);
+// 把新配置写回本文件的 CONFIG 段，保留其余代码
+function persist(next) {
+    try {
+        const source = fs.readFileSync(__filename, "utf8");
+        const block = `const CONFIG = ${JSON.stringify(next, null, 4)};`;
+        const updated = source.replace(
+            /\/\/ >>> CONFIG START[^\n]*\n[\s\S]*?\/\/ <<< CONFIG END/,
+            () => `// >>> CONFIG START（页面保存设置时会重写这一段，可手动修改）\n${block}\n// <<< CONFIG END`
+        );
+        if (updated === source) {
+            throw new Error("未找到 CONFIG 配置块标记");
+        }
+        fs.writeFileSync(__filename, updated, "utf8");
+    } catch (err) {
+        // 文件不可写时不影响本次运行，重启后会恢复旧配置
+        console.error(`保存配置到 settings.js 失败（本次运行内仍生效）：${err.message}`);
+    }
     current = next;
     return current;
 }
@@ -158,7 +160,7 @@ module.exports = {
     },
     // 校验并保存新配置
     update(input) {
-        return save(validate(input));
+        return persist(validate(input));
     },
-    file: SETTINGS_FILE
+    file: __filename
 };
