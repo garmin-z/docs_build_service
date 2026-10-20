@@ -107,13 +107,16 @@ async function getFirstPagePath(docs) {
             repoPath,
             outFile
         ], {
+            cwd: repoPath,
             timeout: 30 * 1000,
             maxBuffer: 1024 * 1024
         });
         return fs.readFileSync(outFile, "utf8").trim();
     } catch (err) {
-        const reason = String(err.message || err).split("\n")[0];
-        sendWs(`未能自动识别第一页（${reason}），预览链接将打开站点根路径`);
+        // 带上 stderr 里最有用的那行，便于定位识别失败的原因
+        const raw = err && err.stderr ? String(err.stderr) : String(err && err.message || err);
+        const detail = raw.split("\n").map((line) => line.trim()).filter(Boolean).pop() || "";
+        sendWs(`未能自动识别第一页（${detail}），预览链接将打开站点根路径`);
         return "";
     } finally {
         fs.unlink(outFile, () => {});
