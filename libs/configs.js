@@ -23,6 +23,7 @@ const DEFAULTS = {
     docs: [],
     gitRepo: "https://github.com/xArm-Developer/ufactory_docs.git",
     gitProxy: "http://192.168.1.176:8016",
+    siteProxy: "",
     deployRoot: "/app/ufactory_docs",
     logDir: "/app/logs",
     previewPort: 3040,
@@ -111,6 +112,12 @@ function validate(input) {
         throw new Error("代理地址不合法（形如 http://host:port）");
     }
 
+    // 站点检查专用代理；留空时回退到 gitProxy
+    const siteProxy = String(input.siteProxy || "").trim();
+    if (siteProxy && !/^https?:\/\/\S+$/.test(siteProxy)) {
+        throw new Error("站点检查代理地址不合法（形如 http://host:port）");
+    }
+
     const publish = input.publish || {};
     const host = String(publish.host || "").trim();
     const user = String(publish.user || "").trim();
@@ -130,6 +137,7 @@ function validate(input) {
         docs: validateDocs(input.docs),
         gitRepo,
         gitProxy,
+        siteProxy,
         deployRoot,
         logDir,
         previewPort,

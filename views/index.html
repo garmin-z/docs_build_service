@@ -371,6 +371,92 @@
       color: #dc2626;
     }
 
+    .site-panel {
+      width: 620px;
+    }
+
+    .site-body {
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 6px 20px;
+    }
+
+    .site-row {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .site-row:last-child {
+      border-bottom: none;
+    }
+
+    .site-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex: none;
+    }
+
+    .site-dot.ok {
+      background: #16a34a;
+    }
+
+    .site-dot.warn {
+      background: #d97706;
+    }
+
+    .site-dot.bad {
+      background: #dc2626;
+    }
+
+    .site-dot.pending {
+      background: var(--text-secondary);
+      opacity: 0.35;
+    }
+
+    .site-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .site-title {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .site-title a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: normal;
+      word-break: break-all;
+    }
+
+    .site-title a:hover {
+      text-decoration: underline;
+    }
+
+    .site-detail {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .site-empty {
+      padding: 24px 0;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
 
     @media (max-width: 640px) {
       .container {
@@ -401,6 +487,12 @@
     <div class="header">
       <h1>文档任务管理</h1>
       <div class="header-actions">
+        <button class="theme-toggle" id="siteCheckButton" aria-label="站点检查">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h4l2.5-6 5 12L17 12h4" />
+          </svg>
+          <span>站点检查</span>
+        </button>
         <button class="theme-toggle" id="proxyButton" aria-label="代理设置">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <circle cx="12" cy="12" r="9"></circle>
@@ -499,6 +591,20 @@
     </div>
   </div>
 
+  <div class="proxy-mask" id="siteMask" hidden>
+    <div class="proxy-panel site-panel">
+      <div class="proxy-head">
+        <h2>站点检查</h2>
+        <button class="btn btn-small" id="siteClose">关闭</button>
+      </div>
+      <div class="proxy-body site-body" id="siteBody"></div>
+      <div class="proxy-actions">
+        <span class="proxy-msg" id="siteMsg"></span>
+        <button class="btn" id="siteRefresh">重新检查</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 主题切换功能
     const themeToggle = document.getElementById("themeToggle");
@@ -558,6 +664,12 @@
     const proxyMsg = document.getElementById("proxyMsg");
     const proxyClose = document.getElementById("proxyClose");
     const proxySave = document.getElementById("proxySave");
+    const siteCheckButton = document.getElementById("siteCheckButton");
+    const siteMask = document.getElementById("siteMask");
+    const siteClose = document.getElementById("siteClose");
+    const siteRefresh = document.getElementById("siteRefresh");
+    const siteBody = document.getElementById("siteBody");
+    const siteMsg = document.getElementById("siteMsg");
     // WebSocket 连接对象
     let socket;
     // 是否有任务正在执行（用于日志末尾的加载图标）
@@ -747,6 +859,134 @@
       }
     }
 
+    // ===== 站点检查 =====
+    let siteCheckTimer = null;
+
+    function buildSiteRow(item) {
+      const row = document.createElement("div");
+      row.className = "site-row";
+      row.id = `site-row-${item.value}`;
+
+      const dot = document.createElement("span");
+      dot.className = `site-dot ${item.https ? "ok" : item.reachable ? "warn" : "bad"}`;
+
+      const main = document.createElement("div");
+      main.className = "site-main";
+
+      const title = document.createElement("div");
+      title.className = "site-title";
+      const name = document.createElement("span");
+      name.textContent = item.label;
+      const link = document.createElement("a");
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = item.host;
+      title.appendChild(name);
+      title.appendChild(link);
+
+      const status = item.https ? item.httpsStatus : (item.httpStatus || "-");
+      const detail = document.createElement("div");
+      detail.className = "site-detail";
+      detail.textContent = `${item.https ? "HTTPS 已开启" : "HTTPS 未开启"} · 状态码 ${status} · ${item.latency}ms · ${item.message}`;
+
+      main.appendChild(title);
+      main.appendChild(detail);
+      row.appendChild(dot);
+      row.appendChild(main);
+      return row;
+    }
+
+    function buildPendingRow(doc) {
+      const row = document.createElement("div");
+      row.className = "site-row";
+      row.id = `site-row-${doc.value}`;
+
+      const dot = document.createElement("span");
+      dot.className = "site-dot pending";
+
+      const main = document.createElement("div");
+      main.className = "site-main";
+
+      const title = document.createElement("div");
+      title.className = "site-title";
+      const name = document.createElement("span");
+      name.textContent = doc.label;
+      title.appendChild(name);
+
+      const detail = document.createElement("div");
+      detail.className = "site-detail";
+      detail.textContent = "检查中...";
+
+      main.appendChild(title);
+      main.appendChild(detail);
+      row.appendChild(dot);
+      row.appendChild(main);
+      return row;
+    }
+
+    function updateSiteRow(item) {
+      const row = buildSiteRow(item);
+      const existing = document.getElementById(`site-row-${item.value}`);
+      if (existing) {
+        existing.replaceWith(row);
+      } else {
+        siteBody.appendChild(row);
+      }
+    }
+
+    function finishSiteCheck(message) {
+      siteMsg.textContent = message;
+      siteRefresh.disabled = false;
+      if (siteCheckTimer) {
+        clearTimeout(siteCheckTimer);
+        siteCheckTimer = null;
+      }
+    }
+
+    async function runSiteCheck() {
+      siteRefresh.disabled = true;
+      siteMsg.textContent = "检查中...";
+      siteBody.innerHTML = "";
+      const docs = (appSettings && appSettings.docs) || [];
+      docs.forEach((doc) => siteBody.appendChild(buildPendingRow(doc)));
+
+      // 优先走 WebSocket：服务端每检查完一个站点就推送一条结果
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          cmd: "site-check"
+        }));
+        siteCheckTimer = setTimeout(() => {
+          finishSiteCheck("检查超时（未收到服务端结果），请重试");
+        }, 20000);
+        return;
+      }
+
+      // WebSocket 未连接时退回到批量接口
+      try {
+        const res = await fetch("/site-check");
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        const data = await res.json();
+        siteBody.innerHTML = "";
+        data.items.forEach((item) => siteBody.appendChild(buildSiteRow(item)));
+        finishSiteCheck(`检查完成：${new Date(data.checkedAt).toLocaleTimeString()}`);
+      } catch (err) {
+        siteBody.innerHTML = "";
+        finishSiteCheck(`检查失败: ${err.message}`);
+      }
+    }
+
+    function openSiteCheck() {
+      siteMask.hidden = false;
+      runSiteCheck();
+    }
+
+    function closeSiteCheck() {
+      siteMask.hidden = true;
+    }
+
     let reconnectTimer = null;
 
     // 连接 WebSocket 并接收日志，断线后自动重连
@@ -782,6 +1022,13 @@
             }
           } else if (data.preview) {
             displayPreviewLink(data.preview.path);
+          } else if (data.site) {
+            updateSiteRow(data.site);
+          } else if (data.siteDone) {
+            const proxyNote = data.siteDone.proxy ? `（代理 ${data.siteDone.proxy}）` : "";
+            finishSiteCheck(`检查完成：${new Date(data.siteDone.checkedAt).toLocaleTimeString()}${proxyNote}`);
+          } else if (data.siteError) {
+            finishSiteCheck(`检查失败: ${data.siteError.message}`);
           } else if (data.docs) {
             // 后台与 git 同步后分支有变化，更新文档列表
             if (appSettings) {
@@ -837,6 +1084,15 @@
     proxyMask.addEventListener("click", (event) => {
       if (event.target === proxyMask) {
         closeProxy();
+      }
+    });
+
+    siteCheckButton.addEventListener("click", openSiteCheck);
+    siteClose.addEventListener("click", closeSiteCheck);
+    siteRefresh.addEventListener("click", runSiteCheck);
+    siteMask.addEventListener("click", (event) => {
+      if (event.target === siteMask) {
+        closeSiteCheck();
       }
     });
 

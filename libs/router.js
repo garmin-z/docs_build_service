@@ -2,6 +2,7 @@ const express = require("express");
 const deploy = require("../services/deploy");
 const configs = require("./configs");
 const jobState = require("./job-state");
+const siteCheck = require("./site-check");
 const { send } = require("./ws");
 const cors = require("cors");
 const path = require("path");
@@ -57,6 +58,15 @@ const getAppInstance = (port = 3000) => {
             send({
                 docs
             });
+        });
+
+        // 站点可用性检查
+        appInstance.get("/site-check", async (req, rsp) => {
+            try {
+                rsp.json(await siteCheck.checkAll());
+            } catch (err) {
+                rsp.status(500).send({ message: err.message });
+            }
         });
 
         // 部署端点

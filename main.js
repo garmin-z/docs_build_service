@@ -5,6 +5,9 @@ const {
     send
 } = require("./libs/ws");
 const jobState = require("./libs/job-state");
+const siteCheck = require("./libs/site-check");
+
+let siteCheckRunning = false;
 
 
 
@@ -42,6 +45,30 @@ app.server.on("upgrade", (request, socket, head) => {
                         running: jobState.isRunning()
                     }
                 });
+            }
+            // 站点检查：每检查完一个站点就推送给页面显示
+            if (payload && payload.cmd === "site-check" && !siteCheckRunning) {
+                siteCheckRunning = true;
+                siteCheck.checkAllStreaming((item) => {
+                        send({
+                            site: item
+                        });
+                    })
+                    .then((result) => {
+                        send({
+                            siteDone: result
+                        });
+                    })
+                    .catch((err) => {
+                        send({
+                            siteError: {
+                                message: err.message
+                            }
+                        });
+                    })
+                    .finally(() => {
+                        siteCheckRunning = false;
+                    });
             }
             console.log(`Received: ${message}`)
         });
