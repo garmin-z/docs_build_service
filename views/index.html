@@ -434,8 +434,15 @@
     .site-title a {
       color: var(--primary-color);
       text-decoration: none;
-      font-size: 13px;
-      font-weight: normal;
+      font-size: 14px;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .site-branch {
+      color: var(--text-color);
+      font-size: 16px;
+      font-weight: 600;
       word-break: break-all;
     }
 
@@ -448,6 +455,12 @@
       font-size: 12px;
       color: var(--text-secondary);
       word-break: break-all;
+    }
+
+    .site-detail-pending {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .site-empty {
@@ -862,6 +875,14 @@
     // ===== 站点检查 =====
     let siteCheckTimer = null;
 
+    // 与 libs/site-check.js 的 hostFor 保持一致：usermanual 用主站域名，其余按文档标识生成
+    function hostFor(value) {
+      if (value === "usermanual") {
+        return "docs.ufactory.cc";
+      }
+      return `docs.${String(value).replace(/_/g, "")}.ufactory.cc`;
+    }
+
     function buildSiteRow(item) {
       const row = document.createElement("div");
       row.className = "site-row";
@@ -873,16 +894,20 @@
       const main = document.createElement("div");
       main.className = "site-main";
 
+      // 列表显示“分支名 + 域名”，分支名在前；点击域名打开当前分支站点的第一页（与预览的第一页一致）
       const title = document.createElement("div");
       title.className = "site-title";
-      const name = document.createElement("span");
-      name.textContent = item.label;
+      if (item.branch) {
+        const branch = document.createElement("span");
+        branch.className = "site-branch";
+        branch.textContent = item.branch;
+        title.appendChild(branch);
+      }
       const link = document.createElement("a");
       link.href = item.url;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = item.host;
-      title.appendChild(name);
       title.appendChild(link);
 
       const status = item.https ? item.httpsStatus : (item.httpStatus || "-");
@@ -908,15 +933,27 @@
       const main = document.createElement("div");
       main.className = "site-main";
 
+      // 检查中占位行同样显示“分支名 + 域名”，检查完成后替换为带链接的正式行
       const title = document.createElement("div");
       title.className = "site-title";
+      if (doc.branch) {
+        const branch = document.createElement("span");
+        branch.className = "site-branch";
+        branch.textContent = doc.branch;
+        title.appendChild(branch);
+      }
       const name = document.createElement("span");
-      name.textContent = doc.label;
+      name.textContent = hostFor(doc.value);
       title.appendChild(name);
 
       const detail = document.createElement("div");
-      detail.className = "site-detail";
-      detail.textContent = "检查中...";
+      detail.className = "site-detail site-detail-pending";
+      const spinner = document.createElement("span");
+      spinner.className = "log-spinner";
+      const text = document.createElement("span");
+      text.textContent = "检查中...";
+      detail.appendChild(spinner);
+      detail.appendChild(text);
 
       main.appendChild(title);
       main.appendChild(detail);

@@ -9,10 +9,13 @@ const http = require("http");
 const tls = require("tls");
 const net = require("net");
 const configs = require("./configs");
+const { getFirstPagePath } = require("./doc-first-page");
 
 const REQUEST_TIMEOUT = 15 * 1000;
 const MAX_REDIRECTS = 5;
 const USER_AGENT = "Mozilla/5.0 (compatible; docs-site-check/1.0)";
+// 首页 HTML 只需要侧边栏部分，限制读取大小避免大页面占用内存
+const MAX_BODY_SIZE = 512 * 1024;
 
 // 双栈环境下优先尝试可用的地址族（Happy Eyeballs），
 // 避免 IPv6 不可达时请求一直挂起直到超时
@@ -26,6 +29,57 @@ function hostFor(value) {
     }
     // 域名不允许下划线：support_article -> supportarticle
     return `docs.${String(value).replace(/_/g, "")}.ufactory.cc`;
+}
+
+// 第一页识别需要加载 VitePress 配置，比较重；连续点“重新检查”时做短时缓存
+const FIRST_PAGE_TTL = 60 * 1000;
+const firstPageCache = new Map();
+
+async function resolveFirstPage(value) {
+    const cached = firstPageCache.get(value);
+    if (cached && Date.now() - cached.at < FIRST_PAGE_TTL) {
+        return cached.path;
+    }
+    const result = await getFirstPagePath(value);
+    firstPageCache.set(value, { path: result.path, at: Date.now() });
+    return result.path;
+}
+
+// 从站点首页 HTML 中取侧边栏的第一项链接：VitePress 会把侧边栏渲染进静态 HTML，
+// 这样即使本地没拉过对应分支的仓库，也能拿到当前部署内容的第一页
+function firstSidebarLink(html) {
+    if (!html) {
+        return "";
+    }
+    const start = html.indexOf('<aside class="VPSidebar"');
+    if (start === -1) {
+        return "";
+    }
+    const end = html.indexOf("</aside>", start);
+    const section = end === -1 ? html.slice(start) : html.slice(start, end);
+
+    const anchorRe = /<a\b[^>]*>/g;
+    let match;
+    while ((match = anchorRe.exec(section)) !== null) {
+        const tag = match[0];
+        if (!/class="[^"]*VPLink[^"]*"/.test(tag)) {
+            continue;
+        }
+        const hrefMatch = tag.match(/href="([^"]+)"/);
+        if (!hrefMatch) {
+            continue;
+        }
+        const href = hrefMatch[1].split("#")[0].split("?")[0];
+        // 只接受站内页面链接
+        if (!href.startsWith("/")) {
+            continue;
+        }
+        const pagePath = href.replace(/^\/+/, "");
+        if (pagePath) {
+            return pagePath;
+        }
+    }
+    return "";
 }
 
 function getProxyUrl() {
@@ -96,8 +150,8 @@ function openTunnel(target, proxy) {
     });
 }
 
-// 单次请求（不跟随跳转）
-function requestOnce(url, proxy) {
+// 单次请求（不跟随跳转）；captureBody 为 true 时同时取回响应体（用于解析侧边栏）
+function requestOnce(url, proxy, captureBody) {
     return new Promise((resolve) => {
         const started = Date.now();
         const target = new URL(url);
@@ -108,6 +162,7 @@ function requestOnce(url, proxy) {
             if (!settled) {
                 settled = true;
                 resolve({
+                    body: null,
                     ...result,
                     ms: Date.now() - started
                 });
@@ -120,8 +175,25 @@ function requestOnce(url, proxy) {
                 location: res.headers.location || null,
                 error: null
             };
-            res.resume();
-            done(result);
+            if (!captureBody) {
+                res.resume();
+                return done(result);
+            }
+            let body = "";
+            res.setEncoding("utf8");
+            res.on("data", (chunk) => {
+                if (body.length < MAX_BODY_SIZE) {
+                    body += chunk;
+                }
+            });
+            res.on("end", () => {
+                result.body = body.slice(0, MAX_BODY_SIZE);
+                done(result);
+            });
+            res.on("error", () => {
+                result.body = body.slice(0, MAX_BODY_SIZE);
+                done(result);
+            });
         };
 
         (async () => {
@@ -184,12 +256,12 @@ function requestOnce(url, proxy) {
 }
 
 // 请求并跟随跳转，返回最终状态
-async function request(url, proxy) {
+async function request(url, proxy, captureBody) {
     const chain = [];
     let current = url;
 
     for (let i = 0; i <= MAX_REDIRECTS; i++) {
-        const res = await requestOnce(current, proxy);
+        const res = await requestOnce(current, proxy, captureBody);
         chain.push({
             url: current,
             status: res.status,
@@ -203,6 +275,7 @@ async function request(url, proxy) {
                 ms: res.ms,
                 error: res.error,
                 finalUrl: current,
+                body: res.body || null,
                 chain
             };
         }
@@ -217,6 +290,7 @@ async function request(url, proxy) {
                     ms: res.ms,
                     error: "BAD_REDIRECT",
                     finalUrl: current,
+                    body: null,
                     chain
                 };
             }
@@ -229,6 +303,7 @@ async function request(url, proxy) {
             ms: res.ms,
             error: null,
             finalUrl: current,
+            body: res.body || null,
             chain
         };
     }
@@ -239,15 +314,16 @@ async function request(url, proxy) {
         ms: 0,
         error: "TOO_MANY_REDIRECTS",
         finalUrl: current,
+        body: null,
         chain
     };
 }
 
 // 超时自动重试一次（慢网络/偶发握手卡住时比较有用）
-async function requestWithRetry(url, proxy) {
-    const first = await request(url, proxy);
+async function requestWithRetry(url, proxy, captureBody) {
+    const first = await request(url, proxy, captureBody);
     if (first.error === "TIMEOUT") {
-        return request(url, proxy);
+        return request(url, proxy, captureBody);
     }
     return first;
 }
@@ -257,9 +333,12 @@ async function checkDoc(doc, proxy) {
     const httpsUrl = `https://${host}/`;
     const httpUrl = `http://${host}/`;
 
-    const [httpsRes, httpRes] = await Promise.all([
-        requestWithRetry(httpsUrl, proxy),
-        request(httpUrl, proxy)
+    const [httpsRes, httpRes, localFirstPage] = await Promise.all([
+        // 取回首页 HTML，用于解析侧边栏第一项
+        requestWithRetry(httpsUrl, proxy, true),
+        request(httpUrl, proxy, true),
+        // 与预览共用同一套第一页识别逻辑（当前分支的本地仓库）
+        resolveFirstPage(doc.value)
     ]);
 
     const httpsOk = httpsRes.status !== null && httpsRes.status < 400;
@@ -282,12 +361,21 @@ async function checkDoc(doc, proxy) {
         message = `无法访问：${httpsRes.error || `状态码 ${httpsRes.status}`}`;
     }
 
+    // 点击域名时打开当前分支站点的第一页：
+    // 与预览保持一致，优先用本地分支仓库识别（和预览的第一页完全相同）；
+    // 本地没拉过仓库时，从线上首页 HTML 的侧边栏第一项解析，最后退回站点根路径
+    const localPath = String(localFirstPage || "").replace(/^\/+/, "");
+    const firstPagePath = localPath
+        || firstSidebarLink(httpsRes.body)
+        || firstSidebarLink(httpRes.body);
+
     return {
         value: doc.value,
         label: doc.label,
         branch: doc.branch,
         host,
-        url: httpsUrl,
+        url: firstPagePath ? `https://${host}/${firstPagePath}` : httpsUrl,
+        firstPage: firstPagePath || null,
         proxy: proxy ? `${proxy.host}:${proxy.port}` : null,
         reachable: httpsOk || httpOk,
         https: httpsOk,
@@ -329,5 +417,6 @@ module.exports = {
     checkAll,
     checkAllStreaming,
     hostFor,
-    getProxyUrl
+    getProxyUrl,
+    firstSidebarLink
 };

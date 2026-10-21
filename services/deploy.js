@@ -1,10 +1,6 @@
 const {
     execFile
 } = require("child_process");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
-const { promisify } = require("util");
 
 const {
     sendWs,
@@ -13,8 +9,7 @@ const {
 
 const jobState = require("../libs/job-state");
 const configs = require("../libs/configs");
-
-const execFileAsync = promisify(execFile);
+const { getFirstPagePath } = require("../libs/doc-first-page");
 
 // 文档类型来自配置文件
 function findDocConfig(docs) {
@@ -121,45 +116,21 @@ function publish(req, rsp) {
 }
 
 
-// 动态获取文档第一页：加载文档仓库的 VitePress 配置，取侧边栏第一个链接，
-// 文档结构变化后无需改代码；识别失败时返回空字符串（链接退回站点根路径）
-async function getFirstPagePath(docs) {
-    const repoPath = path.join(configs.get().deployRoot, docs);
-    const outFile = path.join(os.tmpdir(), `first-page-${docs}-${Date.now()}.txt`);
-
-    try {
-        await execFileAsync("node", [
-            path.join(__dirname, "../shells/first-page.js"),
-            repoPath,
-            outFile
-        ], {
-            cwd: repoPath,
-            timeout: 30 * 1000,
-            maxBuffer: 1024 * 1024
-        });
-        return fs.readFileSync(outFile, "utf8").trim();
-    } catch (err) {
-        // 带上 stderr 里最有用的那行，便于定位识别失败的原因
-        const raw = err && err.stderr ? String(err.stderr) : String(err && err.message || err);
-        const detail = raw.split("\n").map((line) => line.trim()).filter(Boolean).pop() || "";
-        sendWs(`未能自动识别第一页（${detail}），预览链接将打开站点根路径`);
-        return "";
-    } finally {
-        fs.unlink(outFile, () => {});
-    }
-}
-
 function preview(req, rsp) {
     startJob(req, rsp, (docs) => [
         { file: "./shells/kill_preview.sh" },
         { file: "./shells/preview.sh", args: [docs] }
     ], async (docs) => {
-        const firstPagePath = await getFirstPagePath(docs);
+        // 第一页识别失败时 path 为空字符串，链接退回站点根路径
+        const firstPage = await getFirstPagePath(docs);
+        if (firstPage.error) {
+            sendWs(`未能自动识别第一页（${firstPage.error}），预览链接将打开站点根路径`);
+        }
         // 预览启动成功后把第一页路径推给前端，由前端拼上当前主机名和 3040 端口
         send({
             preview: {
                 docs,
-                path: firstPagePath
+                path: firstPage.path
             }
         });
     });
